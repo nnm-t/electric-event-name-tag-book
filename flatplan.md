@@ -1,0 +1,29 @@
+# 台割
+
+- まえがき
+- M5Stack
+  - ESP32
+  - 入手先
+  - ペリフェラル
+- 部材選定
+  - 組み立て
+- 環境構築
+  - Arduino IDE
+    - ライブラリ
+      - M5Stack
+      - ArduinoJson
+      - LovyanGFX
+  - その他の開発環境
+    - UI Flow
+    - PlatformIO
+    - ESP-IDF
+- コーディング
+  - 入出力
+    - ボタン
+    - 液晶
+      - バックライト
+    - バッテリ残量
+    - NeoPixel LED
+  - テクニック
+- 動作確認
+- あとがき
