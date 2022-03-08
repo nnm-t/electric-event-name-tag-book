@@ -126,19 +126,46 @@ ESP32では2.4GHz帯のIEEE 802.11b/g/nに対応する。
 
 ### 本体
 
+Core、Module、Bottomの三層構造になっており、CoreとBottomの間にModuleを重ねる (Stack) と電気的にも接続される構造をとっている。
+このおかげで半田付けもブレッドボードも不要で機能を拡張できる。
+
+- Core: MCU、LCD、周辺部品などがケースに収められたモジュール。
+  - 最低限必要な部品は全てCoreに収まっているので、ModuleやBottomがなくても動作はする。
+- Module: 電源、通信などの機能を収めたモジュール。
+  - ユニバーサル基板が付いたProto Moduleが販売されており、自作の回路をModule化することもできる。
+- Bottom: LiPoバッテリが収められた底面モジュール。
+
+本体はCore + Bottomのセットで販売されている。
+どれを買ったら良い? というと甲乙付けがたいが、単体であれこれするならCore2、電子部品と繋いでいじるならBasicとの価格差も少ないGrayではないだろうか (結局あとから買い増しして揃うのがM5Stack沼である)。
+
 #### Basic/Gray/Fire
 
+初期からある本体。
+周辺部品の違いで3種類用意されている。
+半導体不足の影響でUSBシリアル変換ICが変更されたものはリビジョンが変わっている (それ以前もIMUやLCDなどが変更されているが、品番も変わらず予告もなかった)。
+
+比較的価格が安く、他の電子部品と接続しやすいなど後発のCore2と棲み分けがなされており、執筆時点に至るまで併売されている。
+
 - Basic: 基本的な製品。
+  - 150mAhのLiPoバッテリが装着されたBattery Bottomが装着されている。M-BUSの配線がピンヘッダ/ピンソケットが引き出されており、付属のジャンパワイヤでブレッドボード等と接続できる。
 - Gray: BasicにIMU (BMM150 + MPU6886) が加えられた上位版。
-- Fire: Grayに加えてMCUにPSRAMが接続されている。Grove B/CポートとNeoPixel付きのM5Go Bottomが付属する。
+- Fire: Grayに加えてMCUにPSRAMが接続されている。Grove B/CポートとNeoPixel付きのM5GO Bottomが装着されている。
 
 ![M5Stack Basic/Gray/Core](images/m5stack-connection.png)
 
 #### Core2
 
 全面的に刷新された本体で、MCUはFireと同様にPSRAMが接続されている。
-外部接続端子はM-BUSとGrove互換ポートのみで、内蔵部品やGroveモジュールで動かす用途に向く。
+外部接続端子はM-BUSとGrove互換ポートのみで、内蔵部品やGroveモジュールを動かす用途に向く。
 M-BUSにはIMU (BMM150 + MPU6886) とマイクが搭載された子基板が装着済み。
+
+LiPoバッテリは390mAhへ増量しており、Coreの底面と面一になる専用のBottomが付属する。
+
+Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外にGPIOなど各種ペリフェラルを割り当てて使用できるようになっている。
+このためI2Cを使用する際は `GPIO21`/`GPIO21` へ割り当てられた `I2C` とは別系統になり、`I2C1` を割り当てる。
+
+緑色LEDと振動モータは電源管理IC AXP192を経由で接続されている。
+これらはAXP192のAPIを使用して制御できる。
 
 ![M5Stack Core2](images/m5stack-core2-connection.png)
 
@@ -227,16 +254,25 @@ Core2ではGrove互換ポートのピン配置が変更され、I2C以外でも�
 
 #### M-BUS
 
-背面にはM5Stack独自のM-BUS端子が引き出されている。
-互換性が考慮されているとはいえ、Basic/Gray/FireとCore2ではピンアサインが異なる。
+![M-BUS](images/m-bus.png)
+
+背面にはM5Stack独自のM-BUSが引き出されている。
+
+Basic/Gray/FireとCore2ではピンアサインが異なり、**太字**で示したピンが変更されている。
+概ね互換性が考慮されているが、Core2では `PA_SDA` と `PA_SCL` (Grove互換ポートと接続) が増え、`GPIO` の配置がずれている。
+その分I2Sのピン数が減っている。
 
 ## 環境構築
 
 ### ESP32 Arduino
 
-Atmel (現: Microchip) AVR等のマイコンボードである**Arduino**の開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしており、利用者も多い。
-Arduinoの開発経験があれば違和感なく使用できるが、Timerなど一部のAPIは非互換で別個に用意されている。
-後述のESP-IDFの上で動作する設計となっており、足りない機能があってもESP-IDFのAPIをそのまま呼び出して使用できる。
+![Arduino フレームワーク](images/arduino-framework.png)
+
+Atmel (現: Microchip) AVR等のマイコンボードである**Arduino**での開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしており、利用者も多い。
+
+Arduino IDEへインストールして使用する設計で、Arduinoの開発経験があれば違和感なく使用できる。
+一方でTimerなど一部のAPIは非互換で別個に用意されている。
+後述のESP-IDFの上で動作しており、足りない機能があってもESP-IDFのAPIをそのまま呼び出して使用できる。
 
 プログラミング言語は、公式には**Arduino言語**と称している。
 実体はC++そのもので、`.ino` 形式の**スケッチ** (Arduinoではプログラムをこう呼ぶ) にArduino標準ライブラリのincludeなどが書かれたヘッダ・フッタをくっつけてビルドする仕組みとなっている。
