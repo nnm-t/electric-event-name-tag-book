@@ -5,8 +5,6 @@
   - ESP32
   - 入手先
   - ペリフェラル
-- 部材選定
-  - 組み立て
 - 環境構築
   - Arduino IDE
     - ライブラリ
@@ -17,6 +15,11 @@
     - UI Flow
     - PlatformIO
     - ESP-IDF
+- 部材選定
+  - M5Stack Core2
+  - Proto Module
+  - M5GO Bottom
+  - 組み立て
 - コーディング
   - 入出力
     - ボタン
