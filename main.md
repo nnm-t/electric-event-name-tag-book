@@ -275,8 +275,41 @@ Arduino IDEへインストールして使用する設計で、Arduinoの開発�
 後述のESP-IDFの上で動作しており、足りない機能があってもESP-IDFのAPIをそのまま呼び出して使用できる。
 
 プログラミング言語は、公式には**Arduino言語**と称している。
-実体はC++そのもので、`.ino` 形式の**スケッチ** (Arduinoではプログラムをこう呼ぶ) にArduino標準ライブラリのincludeなどが書かれたヘッダ・フッタをくっつけてビルドする仕組みとなっている。
-これによりC/C++や組み込み開発特有の泥臭い処理を隠蔽している。
+
+```cpp
+// グローバル変数等はここに記述
+
+void setup()
+{
+    // 起動時に一度だけ実行する処理
+}
+
+void loop()
+{
+    // setup() 関数実行後、繰り返し実行する処理
+}
+```
+
+実体はC++そのもので、`.ino` 形式の**スケッチ** (Arduinoではプログラムをこう呼ぶ) に `Arduino.h` をincludeする処理をくっつける。
+マイコンの種類ごとに用意された、`main()` 関数を実行するコードと一緒にビルドする仕組みとなっている。
+
+```cpp
+#include <Arduino.h>
+
+int main(void)
+{
+    // マイコンの初期化処理が入る
+
+    setup();
+
+    for(;;)
+    {
+        loop();
+    }
+}
+```
+
+これにより、C/C++や組み込み開発特有の泥臭い処理を隠蔽している。
 
 ホビー用ということもあってブレークポイントやレジスタ・メモリマップといった本格的なデバッグ機能は使用できず、`Serial.println()` 関数などを用いたいわゆる**printfデバッグ**で対処する (Visual Micro Arduino for Visual Studio (https://www.visualmicro.com/) を使用すると本格的なデバッグが可能)。
 
@@ -357,9 +390,16 @@ Webブラウザ上での開発が可能で、ブロックを組み立ててプ�
 
 ## 部材選定
 
-### M5Stack Core2
+### M5Stack Basic/Gray/Fire/Core2
+
+M5Stack本体を購入する。
+これがなければ始まらない。
+
+今回のプログラムはプリプロセッサマクロでBasic/Gray/FireとCore2向けを切り替えてビルドできるようにコーディングしており、いずれも使用できる。
 
 ### Proto Module
+
+M-BUSピンソケット/ピンヘッダ取り付け済みのユニバーサル基板がケースに装着されたModule。
 
 ケースの上下には予め小さなが穴2つずつ、大きな穴 (ケーブルを通すためのもの) が1つずつ開けられている。
 側面にはスリットも開けられている。
@@ -371,7 +411,7 @@ NeoPixel (10個)、赤外LED、赤外線センサを内蔵し、Grove互換ポ�
 底面には電源 (とI2C) 端子が引き出されていて、別売のM5GO/Fire チャージベースに付いているポゴピンを介し、CoreにUSBケーブルを接続せずに充電できる。
 元々はM5Stack Fire / M5GO IoT スターターキットの付属品だが、単品販売もされている。
 
-M5GO Bottomを含む**初期に発売されたModuleやBaseではM-BUSピンヘッダの長さが2mmのため、そのままでは接続できない**と称されている。
+M5GO Bottomを含む**初期に発売されたModuleやBaseではM-BUSピンヘッダの長さが2mmのため、そのままではCore2とは接続できない**と称されている。
 Core2用にはM-BUSピンヘッダの長さが2.5mmに変更され、ピン配置の変更に対応したM5GO Bottom2 (子基板が取り付けられない問題を解決するため、IMUとマイクも搭載) が用意されており、そちらの使用が推奨されている。
 
 ところが、筆者はProto Moduleを間を挟むことでM-BUSピンヘッダの長さ問題を解決し、手持ちの初代M5GO Bottomを流用してしまっている。
@@ -398,3 +438,210 @@ Core2の子基板をマイナスドライバー等でこじって先に外し、
 
 吊り下げ紐にはナスカン2組を通しておき、名札として使用する時に環を開けてヒートンに通す。
 これで紐が不要なときは環を開けて取り外せるし、逆の手順を踏んでProto Moduleを外せばCore2を完全に元の状態に戻せる。
+
+## プログラム
+
+### 使用ライブラリ
+
+#### M5Stack/M5Core2
+
+M5Stack社公式のライブラリ。
+Basic/Core/FireではM5Stackライブラリを、Core2ではM5Core2ライブラリをincludeする。
+
+周辺部品を利用するためのライブラリが同梱され、呼び出しやすいようにAPIがまとめられている。
+
+#### ArduinoJson
+
+ArduinoでJSONファイルを読み書きするためのライブラリで、AVRマイコンのほか、ESP32やCortex-Mなどで動作する。
+
+組み込み向けに開発されており、使用するメモリをすべて静的に確保できるように配慮されている。
+
+#### LovyanGFX
+
+ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶用のライブラリ。
+液晶制御用のライブラリはM5Core2ライブラリにもTFT_eSPIが同梱されているが、チューニングが行われており高速に動作する。
+
+日本語の表示には予め自分でフォントセットを用意する必要があったTFT_eSPIライブラリとは異なり、IPAフォントとefontからコンバートされた日本語フォントが同梱されている。
+日本語フォントは文字数が多くプログラム肥大化の要因になる。
+本プログラムでは16, 24, 32, 40pxの4サイズのIPAフォントを読み込ませており、Flashが4MBの機種ではパーティションスキームが標準のDefault 4MB with spiffs (1.5MB x2/1MB SPIFFS) では不足するので (OTA (Over The Air) 機能でWi-Fi経由のプログラム書き換えを実現するため、プログラム領域が2分割されている。読み書きは片方のみ行う仕組み) 、Huge APP (3MB No OTA/1MB SPIFFS) へ変更する (OTAは使えなくなる)。
+Flashが16MBの機種ではパーティションスキームに16MB Flash (3MB APP/9MB FATFS) が選べ、こちらへ変更するとプログラム領域を賄えてかつOTAにも対応する。
+
+### コーディング
+
+#### JSON読み込み
+
+まずは `StaticJsonDocument<N>` インスタンスを確保する。
+匿名 `namespace` ブロック内に記述すると他のファイルから呼び出せなくなる
+。
+
+```cpp
+namespace {
+    StaticJsonDocument<4096> json_document;
+}
+```
+
+`SD.open()` 関数でSDカードに保存されたJSONファイルを開くと `File` 型オブジェクトを取得できるので、 `deserializeJson()` 関数でデシリアライズする。
+`json_document` には展開済のデータが格納されるので、あとはエラーチェックを済ませる。
+
+```cpp
+
+File json_file = SD.open("/settings.json");
+DeserializationError error = deserializeJson(json_document, json_file);
+
+if (error != DeserializationError::Ok)
+{
+    Serial.println("JSON Deserialization Error");
+    return;
+}
+```
+
+#### ループ処理
+
+`loop()` 関数内に処理を書き、 `delay()` 関数で指定時間分処理を止める手法がよく紹介されている。
+ループの周期は**処理時間 + `delay()` 関数での待機時間**となり一定間隔での実行が保証されず、また待機中は他の処理も一切できない。
+
+そこで、ハードウェアで実装されたTimerを利用して、指定の間隔で**実行中の処理を中断して別の処理を実行する**タイマー割り込みを使用する。
+こうすると実行間隔が保証されるというわけである。
+ESP32 Arduinoのタイマー割り込みはArduino標準ライブラリのそれとは互換性がなく、ESP32 Arduinoの `Ticker` クラスを使用する。
+
+処理によっては `loop()` 関数内でなければうまく動かないこともあるので、そのような場合は両者を使い分ける。
+`M5.update()` 関数はTimer割り込み内に書いても特に問題はないようである。
+
+ブロック外でインスタンスを生成し (匿名 `namespace` 内に入れている)、`setup()` 関数で周期 (ミリ秒) とコールバック関数を与える `attach_ms()` 関数を実行する。
+あとはコールバック関数のブロック内に処理を記述していく。
+
+```cpp
+namespace {
+    Ticker ticker;
+    // 略
+}
+
+void setup()
+{
+    // 略
+    ticker.attach_ms(100, onTimerTicked);
+}
+
+void onTimerTicked()
+{
+    // ここにループ処理を記述
+}
+```
+
+今回はコールバック内に処理をすべて移しても問題なかったので、`loop()` 関数を空にすることができた。
+
+#### ボタン/タッチパネル押下状態取得
+
+ループ処理内で `M5.update()` 関数を実行した後の行で関数を用いて取得できる。
+いずれも `bool` 型で返るので、`if` 文で分岐させてあげればよい。
+
+```cpp
+if (M5.btnA.wasPressed())
+{
+    // ボタン押下時の処理
+}
+```
+
+ボタンごとに別々のインスタンスが用意されているので、目的のボタンに合わせたものを指定する。
+
+Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関数で `TouchPoint` 型の座標を取得できるが、LCD下部の **○** の部分をボタンの判定としてBasic/Gray/Fireと同じコードで取得することもできる。
+
+- `BtnA`: 左ボタン
+- `BtnB`: 中央ボタン
+- `BtnC`: 右ボタン
+
+ボタン押下状態を取得する関数はいくつか用意されている (箇条書き以外にもある)。
+`wasPressed()` は再び押した時、`wasReleased()` は再び離した時まで呼び出されないので、イベントを取る時には便利である。
+
+- `isPressed()`: **押している間** `true`
+- `isReleased()`: **離している間** `true`
+- `wasPressed()`: **押した時** `true`
+- `wasReleased()`: **離した時** `true`
+
+#### LCD描画
+
+#### NeoPixel点灯
+
+#### 状態遷移
+
+画像を描画する `ImageState` クラスと、QRコードを描画する `QRState` クラスとの遷移を管理する `StateManager` クラスを作成した。
+両者は `IState` クラス (純粋仮想関数のみ) を継承しており、ポインタを `IState*` 型のメンバ変数に代入してポリモーフィズムを実現する。
+
+`begin()` 関数で初期化、`update()` 関数で描画を更新する。
+`toggleState()` 関数を実行すると両者を切り替える。
+
+これらはループ処理から呼び出す。
+
+```cpp
+#pragma once
+
+#include "config.h"
+
+#ifdef BOARD_M5CORE
+#include <M5Stack.h>
+#endif
+#ifdef BOARD_M5CORE2
+#include <M5Core2.h>
+#endif
+
+#include <LovyanGFX.h>
+
+#include "settings.h"
+#include "i-state.h"
+#include "image-state.h"
+#include "qr-state.h"
+
+class StateManager
+{
+    ImageState _image_state;
+    QRState _qr_state;
+
+    IState* _state;
+
+public:
+    StateManager(Settings& settings) : _image_state(ImageState(settings)), _qr_state(QRState(settings))
+    {
+        _state = &_image_state;
+    }
+
+    void begin();
+
+    void toggleState();
+
+    void update();
+};
+```
+
+実装はソースファイルへ分離している。
+
+```cpp
+#include "state-manager.h"
+
+void StateManager::begin()
+{
+    _state->begin();
+}
+
+void StateManager::toggleState()
+{
+    if (_state == &_image_state)
+    {
+        _state = &_qr_state;
+    }
+    else
+    {
+        _state = &_image_state;
+    }
+
+    _state->begin();
+}
+
+void StateManager::update()
+{
+    _state->update();
+}
+```
+
+## 動作確認
+
+## あとがき
