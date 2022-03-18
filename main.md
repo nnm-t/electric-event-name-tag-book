@@ -466,6 +466,36 @@ ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶�
 本プログラムでは16, 24, 32, 40pxの4サイズのIPAフォントを読み込ませており、Flashが4MBの機種ではパーティションスキームが標準のDefault 4MB with spiffs (1.5MB x2/1MB SPIFFS) では不足するので (OTA (Over The Air) 機能でWi-Fi経由のプログラム書き換えを実現するため、プログラム領域が2分割されている。読み書きは片方のみ行う仕組み) 、Huge APP (3MB No OTA/1MB SPIFFS) へ変更する (OTAは使えなくなる)。
 Flashが16MBの機種ではパーティションスキームに16MB Flash (3MB APP/9MB FATFS) が選べ、こちらへ変更するとプログラム領域を賄えてかつOTAにも対応する。
 
+#### Adafruit NeoPixel
+
+RGB LEDにマイコンを内蔵していて、制御信号を送り込んで任意の色で発光できるLED。
+複数のNeoPixelを数珠繋ぎに接続することが可能で、少ない配線でまとめて制御できる。
+オリジナルはWorldSemi社製だが各社から互換品が発売されている。
+
+内蔵のマイコンはWorldSemi社製で、5V駆動品は大きく分けて2種類ある。
+M5GO Baseの内蔵品はWS2812のようである。
+これらと同等の機能を持ったクローン品を搭載したLEDも流通している。
+
+- WS2812
+  - 入力から先頭のRGB色データ (24bit) を受け取り、以降は出力に繋がれたLEDへ流す
+- WS2822
+  - 割り振られたアドレスに対応するRGB色データを受け取る
+
+制御信号はマイコンからGPIO出力をソフトウェアで操作すれば十分で、I2CやSPIを使用する必要はない。
+Arduino環境ではAdafruit Neopixelライブラリを使用すると容易に制御できる。
+
+#### Adafruit SHT31
+
+Senrision社製温湿度センサSHT31用のライブラリ。
+Adafruit製モジュール向けに作られているが、他社製モジュールでも問題なく利用できる。
+国内の電子部品店で入手できる (Amazon マーケットプレイスやAliExpressなどでも出品がある。玉石混交なので自己責任で)。
+
+- Adafruit SHT31-D搭載 温湿度センサモジュール (スイッチサイエンス扱い: https://www.switch-science.com/catalog/3348/)
+- 秋月電子 SHT31使用 高精度温湿度センサモジュール (https://akizukidenshi.com/catalog/g/gK-12125/)
+
+オプションとして温度・湿度表示の機能を組み込んでおり、プリプロセッサマクロでコンパイル条件を設定している。
+使用する時は `.ino` ファイル冒頭のコメントアウトを戻して `#define ENABLE_SHT31` を有効してからビルドする。
+
 ### コーディング
 
 #### JSON読み込み
@@ -560,7 +590,174 @@ Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関�
 
 #### LCD描画
 
-#### NeoPixel点灯
+電池残量の取得は、Basic/Gray/Fire (25%/50%/75%/100%/-1% (取得不能) 表示) とCore2 (電圧表示) では電源管理ICが異なるのでAPIも異なる。
+プリプロセッサマクロを利用して分岐させる。
+
+```cpp
+// バッテリ残量
+#ifdef BOARD_M5CORE
+    // 電池残量
+    int8_t battery_level = M5.Power.getBatteryLevel();
+    _lcd->drawString(String(battery_level) + "%", 40, 0);
+#endif
+#ifdef BOARD_M5CORE2
+    // 電圧
+    float voltage = M5.Axp.GetBatVoltage();
+    _lcd->drawString(String(voltage) + "V", 40, 0);
+#endif
+```
+
+#### LED点灯
+
+M5GO Bottomに内蔵のNeoPixelを点灯させてみる。
+
+```cpp
+#pragma once
+
+#include "config.h"
+
+#ifdef BOARD_M5CORE
+#include <M5Stack.h>
+#endif
+#ifdef BOARD_M5CORE2
+#include <M5Core2.h>
+#endif
+
+#include <LovyanGFX.h>
+#include <ArduinoJson.h>
+#include <Adafruit_NeoPixel.h>
+
+#include "color.h"
+#include "led-pattern.h"
+
+class LED
+{
+    static constexpr const size_t neopixel_num = 10;
+    static constexpr const uint8_t brightness_min = 0;
+    static constexpr const uint8_t brightness_max = 31;
+    static constexpr const size_t brightness_count_max = 20;
+
+    const Color _color;
+    const LEDPattern _pattern;
+
+    bool _is_enabled = false;
+    uint8_t _brightness = brightness_max;
+    bool _brightness_reverse = false;
+    size_t _brightness_count = 0;
+
+public:
+    static LED fromJson(JsonVariant& json_led);
+
+    LED(const Color& color, const LEDPattern pattern) : _color(color), _pattern(pattern)
+    {
+
+    }
+
+    void toggle()
+    {
+        _is_enabled = !_is_enabled;
+    }
+
+    void begin(Adafruit_NeoPixel* const neopixel);
+
+    void update(Adafruit_NeoPixel* const neopixel);
+};
+```
+
+```cpp
+#include "led.h"
+
+LED LED::fromJson(JsonVariant& json_led)
+{
+    JsonVariant json_color = json_led["color"];
+    const Color color = Color::fromJson(json_color);
+
+    const LEDPattern pattern = static_cast<LEDPattern>(json_led["pattern"].as<uint8_t>());
+
+    return LED(color, pattern);
+}
+
+void LED::begin(Adafruit_NeoPixel* const neopixel)
+{
+    neopixel->begin();
+}
+
+void LED::update(Adafruit_NeoPixel* const neopixel)
+{
+    if (!_is_enabled)
+    {
+        // 無効
+        _brightness_count = 0;
+        _brightness_reverse = false;
+
+        neopixel->setBrightness(0);
+        neopixel->show();
+        return;
+    }
+
+    // カウント
+    _brightness_count++;
+
+    // Patternによって変更
+    switch (_pattern)
+    {
+        case LEDPattern::Blink:
+            // 点灯/消灯
+            if (_brightness_reverse)
+            {
+                _brightness = brightness_min;
+            }
+            else
+            {
+                _brightness = brightness_max;
+            }
+            // カウント上限のとき反転
+            if (_brightness_count >= brightness_count_max)
+            {
+                _brightness_reverse = !_brightness_reverse;
+            }
+            break;
+        case LEDPattern::Fade:
+            // 明るさ変更
+            if (_brightness_reverse)
+            {
+                _brightness--;
+            }
+            else
+            {
+                _brightness++;
+            }
+            // 上限/下限で反転
+            if (_brightness <= brightness_min)
+            {
+                _brightness_reverse = false;
+            }
+            else if (_brightness >= brightness_max)
+            {
+                _brightness_reverse = true;
+            }
+            break;
+        default:
+            _brightness_reverse = false;
+            _brightness = brightness_max;
+            break;
+    }
+
+    // カウントリセット
+    if (_brightness_count >= brightness_count_max)
+    {
+        _brightness_count = 0;
+    }
+
+    const uint32_t neopixel_color = neopixel->Color(_color.getRed(), _color.getGreen(), _color.getBlue());
+    for (size_t i = 0; i < neopixel_num; i++)
+    {
+        neopixel->setPixelColor(i, neopixel_color);
+    }
+    neopixel->setBrightness(_brightness);
+    neopixel->show();
+}
+```
 
 #### 状態遷移
 
@@ -569,8 +766,7 @@ Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関�
 
 `begin()` 関数で初期化、`update()` 関数で描画を更新する。
 `toggleState()` 関数を実行すると両者を切り替える。
-
-これらはループ処理から呼び出す。
+これらは `.ino` ファイルのループ処理から呼び出す。
 
 ```cpp
 #pragma once
