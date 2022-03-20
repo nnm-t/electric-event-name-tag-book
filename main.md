@@ -501,8 +501,7 @@ Adafruit製モジュール向けに作られているが、他社製モジュー
 #### JSON読み込み
 
 まずは `StaticJsonDocument<N>` インスタンスを確保する。
-匿名 `namespace` ブロック内に記述すると他のファイルから呼び出せなくなる
-。
+匿名 `namespace` ブロック内に記述すると他のソースファイルから呼び出せなくなる (C言語の関数外 `static` と同じ)。
 
 ```cpp
 namespace {
@@ -537,7 +536,7 @@ ESP32 Arduinoのタイマー割り込みはArduino標準ライブラリのそれ
 処理によっては `loop()` 関数内でなければうまく動かないこともあるので、そのような場合は両者を使い分ける。
 `M5.update()` 関数はTimer割り込み内に書いても特に問題はないようである。
 
-ブロック外でインスタンスを生成し (匿名 `namespace` 内に入れている)、`setup()` 関数で周期 (ミリ秒) とコールバック関数を与える `attach_ms()` 関数を実行する。
+ブロック外でインスタンスを生成し (匿名 `namespace` 内に入れている)、`setup()` 関数で周期 (ミリ秒) とコールバック関数 (`void (*)(TArg)` 型のテンプレート関数ポインタ型で、**コンパイル時に関数のアドレスが確定する**グローバル関数と `static` メンバ関数を与えられる。非 `static` なメンバ関数はインスタンスを生成するまで関数のアドレスが定まらないので不可) を与える `attach_ms()` 関数を実行する。
 あとはコールバック関数のブロック内に処理を記述していく。
 
 ```cpp
@@ -589,6 +588,19 @@ Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関�
 - `wasReleased()`: **離した時** `true`
 
 #### LCD描画
+
+すべてLovyanGFXで描画する。
+まずは匿名 `namespace` 内で `LGFX` 型のインスタンスを作成する。
+
+```cpp
+LGFX lcd;
+```
+
+`setup()` 関数内で `init()` 関数を実行してLCDを初期化する。
+
+```cpp
+lcd.init();
+```
 
 電池残量の取得は、Basic/Gray/Fire (25%/50%/75%/100%/-1% (取得不能) 表示) とCore2 (電圧表示) では電源管理ICが異なるのでAPIも異なる。
 プリプロセッサマクロを利用して分岐させる。
@@ -768,75 +780,77 @@ void LED::update(Adafruit_NeoPixel* const neopixel)
 `toggleState()` 関数を実行すると両者を切り替える。
 これらは `.ino` ファイルのループ処理から呼び出す。
 
-```cpp
-#pragma once
+#### その他
 
-#include "config.h"
+##### データ型
 
-#ifdef BOARD_M5CORE
-#include <M5Stack.h>
-#endif
-#ifdef BOARD_M5CORE2
-#include <M5Core2.h>
-#endif
+C/C++では組み込み型のサイズが処理系依存である。
+例えば `int` と書いても多くの32bit環境 (x86, ARMなど) では4バイトだが、8bitマイコンのAVRへ移植すると2バイトであり、したがって変数の取りうる値の範囲も異なる。
+これではソースを別の処理系へ流用した時に互換性が取れないので、サイズ別に分類した型の別名が `stdint.h` に定義されている。
+組み込み開発では様々な処理系が存在することから、基本的に別名を使用してコーディングする。
 
-#include <LovyanGFX.h>
+|型の別名|**大半の**32bit処理系 <br /> での型名|説明|
+|:--|:--|:--|
+|`uint8_t`|`unsigned char`|8bit符号なし整数型|
+|`int8_t`|`signed char`|8bit符号付き整数型|
+|`uint16_t`|`unsigned short`|16bit符号なし整数型|
+|`int16_t`|`short`|16bit符号付き整数型|
+|`uint32_t`|`unsigned int`|32bit符号なし整数型|
+|`int32_t`|`int`|32bit符号付き整数型|
+|`uint64_t`|`unsigned long long`|64bit符号なし整数型|
 
-#include "settings.h"
-#include "i-state.h"
-#include "image-state.h"
-#include "qr-state.h"
+- 組み込み型の `char` は、`unsigned char` か `signed char` のどちらであるかは処理系依存である。
+- 実数型 (浮動小数点型) `float` や `double` は別名を使わない。
+  - 別の問題として処理系によってはハードウェアで浮動小数点演算回路 (FPU) を持っておらず、ソフトウェア処理となり動作が遅くなる。
 
-class StateManager
-{
-    ImageState _image_state;
-    QRState _qr_state;
+##### C++形式のキャスト
 
-    IState* _state;
-
-public:
-    StateManager(Settings& settings) : _image_state(ImageState(settings)), _qr_state(QRState(settings))
-    {
-        _state = &_image_state;
-    }
-
-    void begin();
-
-    void toggleState();
-
-    void update();
-};
-```
-
-実装はソースファイルへ分離している。
+C言語のキャストはポインタ型や `const` 型であれ括弧と型名でキャストできた。
 
 ```cpp
-#include "state-manager.h"
+uint32_t hoge = 255;
+uint8_t fuga = (uint8_t)hoge;
+```
 
-void StateManager::begin()
+C++では型チェックが厳格化された上、用途によってキャストの種類が分かれている。
+単純に値が入っている型を変更するだけの時は `static_cast` を用いる。
+
+```cpp
+uint32_t hoge = 255;
+uint8_t fuga = static_cast<uint8_t>(hoge);
+```
+
+ポインタ型をキャストする時は `reinterpret_cast` を用いる。
+別のポインタ型へ変換して扱うのは思わぬ動作を招く原因になりやすいので、プログラマを注意させるために長い名前になっている。
+
+```cpp
+using func = void (*)(uint8_t);
+
+void foo(void* arg)
 {
-    _state->begin();
+
 }
 
-void StateManager::toggleState()
+void bar(uint8_t arg)
 {
-    if (_state == &_image_state)
-    {
-        _state = &_qr_state;
-    }
-    else
-    {
-        _state = &_image_state;
-    }
 
-    _state->begin();
 }
 
-void StateManager::update()
+void hoge()
 {
-    _state->update();
+    func fuga = bar;
+    foo(reinterpret_cast<void*>(fuga));
 }
 ```
+
+`const` を外す時は `const_cast` を使用する。
+
+```cpp
+const uint32_t hoge = 0;
+uint32_t fuga = const_cast<uint8_t>(hoge);
+```
+
+このほか実行時にキャストを試みる `dynamic_cast` も用意されているが、組み込み開発では実行時型情報 (RTTI) を無効化することが多いのでここでは割愛する。
 
 ## 動作確認
 
