@@ -524,6 +524,120 @@ if (error != DeserializationError::Ok)
 }
 ```
 
+JSONを解析したデータを扱いやすくするため、`Settings` クラスを作成してこちらから操作することにした。
+
+```cpp
+#pragma once
+
+#include "config.h"
+
+#include <vector>
+
+#ifdef BOARD_M5CORE
+#include <M5Stack.h>
+#endif
+#ifdef BOARD_M5CORE2
+#include <M5Core2.h>
+#endif
+
+#include <LovyanGFX.h>
+#include <ArduinoJson.h>
+#include <Adafruit_NeoPixel.h>
+
+#include "color.h"
+#include "menu.h"
+#include "led.h"
+#include "image.h"
+#include "text-element.h"
+#include "qrcode.h"
+
+class Settings
+{
+    LGFX* _lcd = nullptr;
+    Adafruit_NeoPixel* _neopixel = nullptr;
+#ifdef ENABLE_SHT31
+    Adafruit_SHT31* _sht31 = nullptr;
+#endif
+
+    Color _foreground;
+    Color _background;
+    Menu _menu;
+    LED _led;
+    Image _image;
+    std::vector<TextElement> _text_elements;
+    QRCode _qrcode;
+
+public:
+    static Settings* fromJson(JsonDocument& json_document);
+
+    Settings(Color& foreground, Color& background, Menu& menu, LED& led, Image& image, std::vector<TextElement> text_elements, QRCode& qrcode) : _foreground(foreground), _background(background), _menu(menu), _led(led), _image(image), _text_elements(text_elements), _qrcode(qrcode)
+    {
+
+    }
+
+#ifdef ENABLE_SHT31
+    void begin(LGFX& lcd, Adafruit_NeoPixel& neopixel, Adafruit_SHT31& sht31);
+#else
+    void begin(LGFX& lcd, Adafruit_NeoPixel& neopixel);
+#endif
+
+    void toggleLED();
+
+    void showCommon();
+
+    void showImage();
+
+    void showQR();
+
+    void clearLCD();
+
+    void update();
+};
+```
+
+インスタンスを `Settings::fromJson()` 関数へ渡して `Settings` 型のインスタンスを生成する。
+`Color` 型、`Menu` 型、`LED` 型、`Image` 型といった `const` メンバ変数を持つクラスはコピーコンストラクタが自動生成されておらず、**インスタンスの再代入ができない** (コピーコンストラクタを自分で定義すれば再代入は可能だが、`const` メンバ変数の値は書き換えできない)。
+したがって `Settings` 型のインスタンスも再代入できないので、`.ino` ファイル内で予め宣言したグローバル変数へ値を代入することができない。
+そこで、`new` 演算子を使ってメモリを動的に確保する。
+このとき値はポインタ型で返される。
+
+`TextElement` 型は複数個存在しうるので、インスタンスをSTL (Standard Template Libraryの略。テンプレートを活用したC++標準ライブラリ) コンテナ `std::vector<T>` 型へ格納する。
+
+```cpp
+Settings* Settings::fromJson(JsonDocument& json_document)
+{
+    JsonVariant json_foreground = json_document["foreground"];
+    Color foreground = Color::fromJson(json_foreground);
+
+    JsonVariant json_background = json_document["background"];
+    Color background = Color::fromJson(json_background);
+
+    JsonVariant json_menu = json_document["menu"];
+    Menu menu = Menu::fromJson(json_menu);
+
+    JsonVariant json_led = json_document["led"];
+    LED led = LED::fromJson(json_led);
+
+    JsonVariant json_image = json_document["image"];
+    Image image = Image::fromJson(json_image);
+
+    JsonArray json_array = json_document["text"].as<JsonArray>();
+    std::vector<TextElement> text_elements;
+
+    text_elements.reserve(json_array.size());
+
+    for (JsonObject json_element: json_array)
+    {
+        text_elements.push_back(TextElement::fromJson(json_element));
+    }
+
+    JsonVariant json_qrcode = json_document["qrcode"];
+    QRCode qrcode = QRCode::fromJson(json_qrcode);
+
+    return new Settings(foreground, background, menu, led, image, text_elements, qrcode);
+}
+```
+
 #### ループ処理
 
 `loop()` 関数内に処理を書き、 `delay()` 関数で指定時間分処理を止める手法がよく紹介されている。
@@ -572,8 +686,7 @@ if (M5.btnA.wasPressed())
 ```
 
 ボタンごとに別々のインスタンスが用意されているので、目的のボタンに合わせたものを指定する。
-
-Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関数で `TouchPoint` 型の座標を取得できるが、LCD下部の **○** の部分をボタンの判定としてBasic/Gray/Fireと同じコードで取得することもできる。
+Core2ではLCD下部の **○** の部分をボタンの判定として、Basic/Gray/Fireと同じコード取得することもできる。
 
 - `BtnA`: 左ボタン
 - `BtnB`: 中央ボタン
@@ -586,6 +699,44 @@ Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関�
 - `isReleased()`: **離している間** `true`
 - `wasPressed()`: **押した時** `true`
 - `wasReleased()`: **離した時** `true`
+
+##### M5Stack Core2 タッチパネル
+
+Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関数で `TouchPoint` 型の座標を取得できる。
+また `M5.Touch.isPressed()` で領域関係なしにタッチ状態か否かを取得することも可能で、本プログラムでも電源管理IC経由で接続されている内蔵LEDとバイブレータを制御している。
+
+```cpp
+// タッチ中LED消灯
+if (M5.Touch.ispressed())
+{
+    setLed(false);
+    vibrateOn();
+}
+else
+{
+    setLed(true);
+    vibrateOff();
+}
+```
+
+`vibrateOn()`、`vibrateOff()`、`setLed()` 関数はこのように定義している。
+
+```cpp
+void vibrateOn()
+{
+    M5.Axp.SetLDOEnable(3, true);
+}
+
+void vibrateOff()
+{
+    M5.Axp.SetLDOEnable(3, false);
+}
+
+void setLed(bool is_on)
+{
+    M5.Axp.SetLed(is_on);
+}
+```
 
 #### LCD描画
 
@@ -602,26 +753,83 @@ LGFX lcd;
 lcd.init();
 ```
 
-電池残量の取得は、Basic/Gray/Fire (25%/50%/75%/100%/-1% (取得不能) 表示) とCore2 (電圧表示) では電源管理ICが異なるのでAPIも異なる。
-プリプロセッサマクロを利用して分岐させる。
+##### LCD消去
 
 ```cpp
-// バッテリ残量
-#ifdef BOARD_M5CORE
-    // 電池残量
-    int8_t battery_level = M5.Power.getBatteryLevel();
-    _lcd->drawString(String(battery_level) + "%", 40, 0);
-#endif
-#ifdef BOARD_M5CORE2
-    // 電圧
-    float voltage = M5.Axp.GetBatVoltage();
-    _lcd->drawString(String(voltage) + "V", 40, 0);
-#endif
+void Settings::clearLCD()
+{
+    // LCDクリア
+    _lcd->fillScreen(_background.getRGB888());
+}
+```
+
+##### コンテンツ描画
+
+設定を `Settings` 型のインスタンスへ格納しているので、こちらに描画関数を定義した。
+`Settings::showCommon()` でモード共通の表示 (テキストと電池アイコン)、`Settings::showImage()` 関数で画像、 `Settings::showQR()` 関数でQRコードを描画する。
+いずれも表示内容が更新されるものではないので、**起動直後とモード切り替え直後のみ描画すればよい**。
+
+```cpp
+void Settings::showCommon()
+{
+    // 共通表示
+    for (TextElement& text_element: _text_elements)
+    {
+        text_element.show(_lcd);
+    }
+
+    _menu.show(_lcd);
+
+    // 電池アイコン
+    _lcd->fillRect(10, 7, 15, 10, _foreground.getRGB888());
+    _lcd->fillRect(25, 10, 3, 4, _foreground.getRGB888());
+}
+
+void Settings::showImage()
+{
+    // 画像表示
+    _image.show(_lcd);
+}
+
+void Settings::showQR()
+{
+    // QRコード表示
+    _qrcode.show(_lcd);
+}
+```
+
+##### 電池残量取得
+
+電池残量の取得は、Basic/Gray/Fire (25%/50%/75%/100%/-1% (取得不能) 表示) とCore2 (電圧表示) では電源管理ICが異なるのでAPIも異なる。
+これらはプリプロセッサマクロを利用して分岐させる。
+
+こちらは常時更新される内容なので、 `Settings::update()` 関数に定義して、ループ処理から呼び出す。
+
+```cpp
+void Settings::update()
+{
+    // 更新
+    // テキスト色指定等
+    _lcd->setTextColor(_foreground.getRGB888(), _background.getRGB888());
+    _lcd->setTextDatum(TL_DATUM);
+    // バッテリ残量
+    #ifdef BOARD_M5CORE
+        // 電池残量
+        int8_t battery_level = M5.Power.getBatteryLevel();
+        _lcd->drawString(String(battery_level) + "%", 40, 0);
+    #endif
+    #ifdef BOARD_M5CORE2
+        // 電圧
+        float voltage = M5.Axp.GetBatVoltage();
+        _lcd->drawString(String(voltage) + "V", 40, 0);
+    #endif
+}
 ```
 
 #### LED点灯
 
 M5GO Bottomに内蔵のNeoPixelを点灯させてみる。
+色や点灯パターンはJSONを解析して `LED` 型のインスタンスへ格納する。
 
 ```cpp
 #pragma once
@@ -675,6 +883,12 @@ public:
     void update(Adafruit_NeoPixel* const neopixel);
 };
 ```
+
+最初に`Adafruit_NeoPixel::begin()` で初期化してから、`Adafruit_NeoPixel::setBrightness()` 関数で輝度を調整する。
+LEDの色は `Adafruit_NeoPixel::showPixelColor()` 関数で設定できるが、1個ずつの設定なので全部設定するには `for` 文などでループを使用する。
+最後に `Adafruit_NeoPixel::show()` 関数を実行してGPIOへ制御信号を出力する。
+
+さらに、`LEDPattern` 列挙型で点灯パターンをいくつか用意して、 `LED::update()` 関数内で輝度制御をするコードを組み込んだ。
 
 ```cpp
 #include "led.h"
@@ -776,9 +990,80 @@ void LED::update(Adafruit_NeoPixel* const neopixel)
 画像を描画する `ImageState` クラスと、QRコードを描画する `QRState` クラスとの遷移を管理する `StateManager` クラスを作成した。
 両者は `IState` クラス (純粋仮想関数のみ) を継承しており、ポインタを `IState*` 型のメンバ変数に代入してポリモーフィズムを実現する。
 
+```cpp
+#pragma once
+
+#include "config.h"
+
+#ifdef BOARD_M5CORE
+#include <M5Stack.h>
+#endif
+#ifdef BOARD_M5CORE2
+#include <M5Core2.h>
+#endif
+
+#include <LovyanGFX.h>
+
+#include "settings.h"
+#include "i-state.h"
+#include "image-state.h"
+#include "qr-state.h"
+
+class StateManager
+{
+    Settings* _settings = nullptr;
+    ImageState& _image_state;
+    QRState& _qr_state;
+
+    IState* _state = nullptr;
+
+public:
+    StateManager(ImageState& image_state, QRState& qr_state) : _image_state(image_state), _qr_state(qr_state)
+    {
+    }
+
+    void begin(Settings* settings);
+
+    void toggleState();
+
+    void update();
+};
+```
+
 `begin()` 関数で初期化、`update()` 関数で描画を更新する。
 `toggleState()` 関数を実行すると両者を切り替える。
 これらは `.ino` ファイルのループ処理から呼び出す。
+
+```cpp
+#include "state-manager.h"
+
+void StateManager::begin(Settings* settings)
+{
+    _settings = settings;
+
+    _state = &_image_state;
+    _state->begin(_settings);
+}
+
+void StateManager::toggleState()
+{
+    if (_state == &_image_state)
+    {
+        _state = &_qr_state;
+    }
+    else
+    {
+        _state = &_image_state;
+    }
+
+    _state->begin(_settings);
+}
+
+void StateManager::update()
+{
+    _state->update();
+}
+```
 
 #### その他
 
