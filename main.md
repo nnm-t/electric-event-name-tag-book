@@ -498,6 +498,8 @@ Adafruit製モジュール向けに作られているが、他社製モジュー
 
 ### コーディング
 
+<!-- ヘッダファイル 一箇所にまとめて記述 -->
+
 #### JSON読み込み
 
 まずは `StaticJsonDocument<N>` インスタンスを確保する。
@@ -513,7 +515,6 @@ namespace {
 `json_document` には展開済のデータが格納されるので、あとはエラーチェックを済ませる。
 
 ```cpp
-
 File json_file = SD.open("/settings.json");
 DeserializationError error = deserializeJson(json_document, json_file);
 
@@ -526,75 +527,6 @@ if (error != DeserializationError::Ok)
 
 JSONを解析したデータを扱いやすくするため、`Settings` クラスを作成してこちらから操作することにした。
 
-```cpp
-#pragma once
-
-#include "config.h"
-
-#include <vector>
-
-#ifdef BOARD_M5CORE
-#include <M5Stack.h>
-#endif
-#ifdef BOARD_M5CORE2
-#include <M5Core2.h>
-#endif
-
-#include <LovyanGFX.h>
-#include <ArduinoJson.h>
-#include <Adafruit_NeoPixel.h>
-
-#include "color.h"
-#include "menu.h"
-#include "led.h"
-#include "image.h"
-#include "text-element.h"
-#include "qrcode.h"
-
-class Settings
-{
-    LGFX* _lcd = nullptr;
-    Adafruit_NeoPixel* _neopixel = nullptr;
-#ifdef ENABLE_SHT31
-    Adafruit_SHT31* _sht31 = nullptr;
-#endif
-
-    Color _foreground;
-    Color _background;
-    Menu _menu;
-    LED _led;
-    Image _image;
-    std::vector<TextElement> _text_elements;
-    QRCode _qrcode;
-
-public:
-    static Settings* fromJson(JsonDocument& json_document);
-
-    Settings(Color& foreground, Color& background, Menu& menu, LED& led, Image& image, std::vector<TextElement> text_elements, QRCode& qrcode) : _foreground(foreground), _background(background), _menu(menu), _led(led), _image(image), _text_elements(text_elements), _qrcode(qrcode)
-    {
-
-    }
-
-#ifdef ENABLE_SHT31
-    void begin(LGFX& lcd, Adafruit_NeoPixel& neopixel, Adafruit_SHT31& sht31);
-#else
-    void begin(LGFX& lcd, Adafruit_NeoPixel& neopixel);
-#endif
-
-    void toggleLED();
-
-    void showCommon();
-
-    void showImage();
-
-    void showQR();
-
-    void clearLCD();
-
-    void update();
-};
-```
-
 インスタンスを `Settings::fromJson()` 関数へ渡して `Settings` 型のインスタンスを生成する。
 `Color` 型、`Menu` 型、`LED` 型、`Image` 型といった `const` メンバ変数を持つクラスはコピーコンストラクタが自動生成されておらず、**インスタンスの再代入ができない** (コピーコンストラクタを自分で定義すれば再代入は可能だが、`const` メンバ変数の値は書き換えできない)。
 したがって `Settings` 型のインスタンスも再代入できないので、`.ino` ファイル内で予め宣言したグローバル変数へ値を代入することができない。
@@ -604,6 +536,7 @@ public:
 `TextElement` 型は複数個存在しうるので、インスタンスをSTL (Standard Template Libraryの略。テンプレートを活用したC++標準ライブラリ) コンテナ `std::vector<T>` 型へ範囲 `for` 文を使って格納していく。
 
 ```cpp
+// settings.cpp (抜粋)
 Settings* Settings::fromJson(JsonDocument& json_document)
 {
     JsonVariant json_foreground = json_document["foreground"];
@@ -638,9 +571,66 @@ Settings* Settings::fromJson(JsonDocument& json_document)
 }
 ```
 
-`TextElement` 型インスタンスの生成は `static` 関数 `TextElement::fromJson()` を使用する。
+```cpp
+Color Color::fromJson(JsonVariant& json_color)
+{
+    const uint8_t red = json_color[0];
+    const uint8_t green = json_color[1];
+    const uint8_t blue = json_color[2];
+
+    return Color(red, green, blue);
+}
+```
+
+`Menu` 型インスタンスの生成は `static` 関数 `Menu::fromJson()` で行う。
 
 ```cpp
+// menu.cpp (抜粋)
+Menu Menu::fromJson(JsonVariant& json_menu)
+{
+    JsonVariant json_foreground = json_menu["foreground"];
+    const Color foreground = Color::fromJson(json_foreground);
+
+    JsonVariant json_background = json_menu["background"];
+    const Color background = Color::fromJson(json_background);
+
+    return Menu(foreground, background);
+}
+```
+
+`LED` 型インスタンスの生成は `static` 関数 `LED::fromJson()` で行う。
+
+```cpp
+// led.cpp (抜粋)
+LED LED::fromJson(JsonVariant& json_led)
+{
+    JsonVariant json_color = json_led["color"];
+    const Color color = Color::fromJson(json_color);
+
+    const LEDPattern pattern = static_cast<LEDPattern>(json_led["pattern"].as<uint8_t>());
+
+    return LED(color, pattern);
+}
+```
+
+`Image` 型インスタンスの生成は `static` 関数 `Image::fromJson()` で行う。
+
+```cpp
+// image.cpp (抜粋)
+Image Image::fromJson(JsonVariant& json_image)
+{
+    const int32_t x = json_image["x"];
+    const int32_t y = json_image["y"];
+    String src = json_image["src"];
+
+    return Image(x, y, src);
+}
+```
+
+`TextElement` 型インスタンスの生成は `static` 関数 `TextElement::fromJson()` で行う。
+
+```cpp
+// text-element.cpp (抜粋)
 TextElement TextElement::fromJson(JsonObject& json_element)
 {
     const int32_t x = json_element["x"];
@@ -654,6 +644,19 @@ TextElement TextElement::fromJson(JsonObject& json_element)
     const Color background = Color::fromJson(json_background);
 
     return TextElement(x, y, size, text, foreground, background);
+}
+```
+
+```cpp
+// qrcode.cpp (抜粋)
+QRCode QRCode::fromJson(JsonVariant& json_qrcode)
+{
+    const int32_t x = json_qrcode["x"];
+    const int32_t y = json_qrcode["y"];
+    const int32_t width = json_qrcode["width"];
+    String url = json_qrcode["url"];
+
+    return QRCode(x, y, width, url);
 }
 ```
 
@@ -775,6 +778,7 @@ lcd.init();
 ##### LCD消去
 
 ```cpp
+// settings.cpp (抜粋)
 void Settings::clearLCD()
 {
     // LCDクリア
@@ -789,6 +793,7 @@ void Settings::clearLCD()
 いずれも表示内容が更新されるものではないので、**起動直後とモード切り替え直後のみ描画すればよい**。
 
 ```cpp
+// settings.cpp (抜粋)
 void Settings::showCommon()
 {
     // 共通表示
@@ -832,6 +837,7 @@ LovyanGFXでは `fonts` クラスに日本語対応のフォントが複数組�
 本プログラムでは4サイズ収録しているが、前述の通りその代償として4MB Flashの製品では標準のパーティションスキームでは容量不足でビルドできないので、設定を変更しておく。
 
 ```cpp
+// text-element.cpp (抜粋)
 void TextElement::setFont(LGFX* const lcd)
 {
     const lgfx::v0::IFont* font;
@@ -862,6 +868,59 @@ void TextElement::show(LGFX* const lcd)
 }
 ```
 
+```cpp
+// image.cpp (抜粋)
+void Image::show(LGFX* const lcd)
+{
+    // 拡張子ごとに分岐
+    if (_src.endsWith(extension_bmp))
+    {
+        lcd->drawBmpFile(SD, _src, _x, _y);
+    }
+    else if (_src.endsWith(extension_png))
+    {
+        lcd->drawPngFile(SD, _src, _x, _y);
+    }
+    else if (_src.endsWith(extension_jpg))
+    {
+        lcd->drawJpgFile(SD, _src, _x, _y);
+    }
+}
+```
+
+```cpp
+// qrcode.cpp (抜粋)
+void QRCode::show(LGFX* const lcd)
+{
+    lcd->qrcode(_url, _x, _y, _width, 6);
+}
+```
+
+```cpp
+// menu.cpp (抜粋)
+void Menu::show(LGFX* const lcd)
+{
+    // 背景
+    lcd->fillRect(0, 216, 320, 24, _background.getRGB888());
+
+    // 文字
+    lcd->setFont(&fonts::lgfxJapanGothic_24);
+    lcd->setTextColor(_foreground.getRGB888(), _background.getRGB888());
+    lcd->setTextDatum(TC_DATUM);
+    
+    lcd->drawString("LED", 60, 216);
+    lcd->drawString("輝度", 160, 216);
+    lcd->drawString("QR", 260, 216);
+
+    lcd->setTextDatum(TL_DATUM);
+
+    // 枠
+    lcd->drawRect(20, 216, 80, 24, _foreground.getRGB888());
+    lcd->drawRect(120, 216, 80, 24, _foreground.getRGB888());
+    lcd->drawRect(220, 216, 80, 24, _foreground.getRGB888());
+}
+```
+
 ##### 電池残量取得
 
 電池残量の取得は、Basic/Gray/Fire (25%/50%/75%/100%/-1% (取得不能) 表示) とCore2 (電圧表示) では電源管理ICが異なるのでAPIも異なる。
@@ -870,6 +929,7 @@ void TextElement::show(LGFX* const lcd)
 こちらは常時更新される内容なので、 `Settings::update()` 関数に定義して、ループ処理から呼び出す。
 
 ```cpp
+// settings.cpp (抜粋)
 void Settings::update()
 {
     // 更新
@@ -895,59 +955,6 @@ void Settings::update()
 M5GO Bottomに内蔵のNeoPixelを点灯させてみる。
 色や点灯パターンはJSONを解析して `LED` 型のインスタンスへ格納する。
 
-```cpp
-#pragma once
-
-#include "config.h"
-
-#ifdef BOARD_M5CORE
-#include <M5Stack.h>
-#endif
-#ifdef BOARD_M5CORE2
-#include <M5Core2.h>
-#endif
-
-#include <LovyanGFX.h>
-#include <ArduinoJson.h>
-#include <Adafruit_NeoPixel.h>
-
-#include "color.h"
-#include "led-pattern.h"
-
-class LED
-{
-    static constexpr const size_t neopixel_num = 10;
-    static constexpr const uint8_t brightness_min = 0;
-    static constexpr const uint8_t brightness_max = 31;
-    static constexpr const size_t brightness_count_max = 20;
-
-    const Color _color;
-    const LEDPattern _pattern;
-
-    bool _is_enabled = false;
-    uint8_t _brightness = brightness_max;
-    bool _brightness_reverse = false;
-    size_t _brightness_count = 0;
-
-public:
-    static LED fromJson(JsonVariant& json_led);
-
-    LED(const Color& color, const LEDPattern pattern) : _color(color), _pattern(pattern)
-    {
-
-    }
-
-    void toggle()
-    {
-        _is_enabled = !_is_enabled;
-    }
-
-    void begin(Adafruit_NeoPixel* const neopixel);
-
-    void update(Adafruit_NeoPixel* const neopixel);
-};
-```
-
 最初に`Adafruit_NeoPixel::begin()` で初期化してから、`Adafruit_NeoPixel::setBrightness()` 関数で輝度を調整する。
 LEDの色は `Adafruit_NeoPixel::showPixelColor()` 関数で設定できるが、1個ずつの設定なので全部設定するには `for` 文などでループを使用する。
 最後に `Adafruit_NeoPixel::show()` 関数を実行してGPIOへ制御信号を出力する。
@@ -955,18 +962,7 @@ LEDの色は `Adafruit_NeoPixel::showPixelColor()` 関数で設定できるが�
 さらに、`LEDPattern` 列挙型で点灯パターンをいくつか用意して、 `LED::update()` 関数内で輝度制御をするコードを組み込んだ。
 
 ```cpp
-#include "led.h"
-
-LED LED::fromJson(JsonVariant& json_led)
-{
-    JsonVariant json_color = json_led["color"];
-    const Color color = Color::fromJson(json_color);
-
-    const LEDPattern pattern = static_cast<LEDPattern>(json_led["pattern"].as<uint8_t>());
-
-    return LED(color, pattern);
-}
-
+// led.cpp (抜粋)
 void LED::begin(Adafruit_NeoPixel* const neopixel)
 {
     neopixel->begin();
@@ -1054,53 +1050,12 @@ void LED::update(Adafruit_NeoPixel* const neopixel)
 画像を描画する `ImageState` クラスと、QRコードを描画する `QRState` クラスとの遷移を管理する `StateManager` クラスを作成した。
 両者は `IState` クラス (純粋仮想関数のみ) を継承しており、ポインタを `IState*` 型のメンバ変数に代入してポリモーフィズムを実現する。
 
-```cpp
-#pragma once
-
-#include "config.h"
-
-#ifdef BOARD_M5CORE
-#include <M5Stack.h>
-#endif
-#ifdef BOARD_M5CORE2
-#include <M5Core2.h>
-#endif
-
-#include <LovyanGFX.h>
-
-#include "settings.h"
-#include "i-state.h"
-#include "image-state.h"
-#include "qr-state.h"
-
-class StateManager
-{
-    Settings* _settings = nullptr;
-    ImageState& _image_state;
-    QRState& _qr_state;
-
-    IState* _state = nullptr;
-
-public:
-    StateManager(ImageState& image_state, QRState& qr_state) : _image_state(image_state), _qr_state(qr_state)
-    {
-    }
-
-    void begin(Settings* settings);
-
-    void toggleState();
-
-    void update();
-};
-```
-
-`begin()` 関数で初期化、`update()` 関数で描画を更新する。
-`toggleState()` 関数を実行すると両者を切り替える。
+`StateManager::begin()` 関数で初期化、`StateManager::update()` 関数で描画を更新する。
+`StateManager::toggleState()` 関数を実行すると両者を切り替える。
 これらは `.ino` ファイルのループ処理から呼び出す。
 
 ```cpp
-#include "state-manager.h"
-
+// state-manager.cpp (抜粋)
 void StateManager::begin(Settings* settings)
 {
     _settings = settings;
@@ -1129,6 +1084,30 @@ void StateManager::update()
 }
 ```
 
+```cpp
+// image-state.cpp (抜粋)
+void ImageState::begin(Settings* settings)
+{
+    _settings = settings;
+
+    _settings->clearLCD();
+    _settings->showImage();
+    _settings->showCommon();
+}
+```
+
+```cpp
+// qr-state.cpp (抜粋)
+void QRState::begin(Settings* settings)
+{
+    _settings = settings;
+
+    _settings->clearLCD();
+    _settings->showQR();
+    _settings->showCommon();
+}
+```
+
 #### その他
 
 ##### データ型
@@ -1151,6 +1130,8 @@ C/C++では組み込み型のサイズが処理系依存である。
 - 組み込み型の `char` は、`unsigned char` か `signed char` のどちらであるかは処理系依存である。
 - 実数型 (浮動小数点型) `float` や `double` は別名を使わない。
   - 別の問題として処理系によってはハードウェアで浮動小数点演算回路 (FPU) を持っておらず、ソフトウェア処理となり動作が遅くなる。
+
+##### `const`
 
 ##### C++形式のキャスト
 
