@@ -601,7 +601,7 @@ public:
 そこで、`new` 演算子を使ってメモリを動的に確保する。
 このとき値はポインタ型で返される。
 
-`TextElement` 型は複数個存在しうるので、インスタンスをSTL (Standard Template Libraryの略。テンプレートを活用したC++標準ライブラリ) コンテナ `std::vector<T>` 型へ格納する。
+`TextElement` 型は複数個存在しうるので、インスタンスをSTL (Standard Template Libraryの略。テンプレートを活用したC++標準ライブラリ) コンテナ `std::vector<T>` 型へ範囲 `for` 文を使って格納していく。
 
 ```cpp
 Settings* Settings::fromJson(JsonDocument& json_document)
@@ -635,6 +635,25 @@ Settings* Settings::fromJson(JsonDocument& json_document)
     QRCode qrcode = QRCode::fromJson(json_qrcode);
 
     return new Settings(foreground, background, menu, led, image, text_elements, qrcode);
+}
+```
+
+`TextElement` 型インスタンスの生成は `static` 関数 `TextElement::fromJson()` を使用する。
+
+```cpp
+TextElement TextElement::fromJson(JsonObject& json_element)
+{
+    const int32_t x = json_element["x"];
+    const int32_t y = json_element["y"];
+    const TextSize size = static_cast<TextSize>(json_element["size"].as<uint8_t>());
+    String text = json_element["text"];
+
+    JsonVariant json_foreground = json_element["foreground"];
+    JsonVariant json_background = json_element["background"];
+    const Color foreground = Color::fromJson(json_foreground);
+    const Color background = Color::fromJson(json_background);
+
+    return TextElement(x, y, size, text, foreground, background);
 }
 ```
 
@@ -795,6 +814,51 @@ void Settings::showQR()
 {
     // QRコード表示
     _qrcode.show(_lcd);
+}
+```
+
+テキストはメンバ関数 `TextElement::show()` で描画する。
+ここでは座標を指定して描画する `LGFX::drawString()` 関数を使用している。
+他に `LGFX::setCursor()` 関数でカーソルの座標を指定し、カーソルを移動させながら描画する `LGFX::print()` ないし `LGFX::println()` (カーソルが改行される) 関数も用意されている。
+
+`LGFX::drawString()` などの前に設定用の関数を実行すると文字列の描画設定を変更できる。
+
+- `LGFX::setFont()` 関数: フォントの設定
+- `LGFX::setTextColor()` 関数: 色の設定 (文字色、背景色)
+- `LGFX::setTextDatum()` 関数: 文字列を描画する原点の位置
+
+LovyanGFXでは `fonts` クラスに日本語対応のフォントが複数組み込まれており、フォントデータを作成しなくてもすぐに使える。
+これらはコードで参照した状態でビルドすると組み込まれ、プログラムサイズが大きくなっていく。
+本プログラムでは4サイズ収録しているが、前述の通りその代償として4MB Flashの製品では標準のパーティションスキームでは容量不足でビルドできないので、設定を変更しておく。
+
+```cpp
+void TextElement::setFont(LGFX* const lcd)
+{
+    const lgfx::v0::IFont* font;
+
+    switch(_size)
+    {
+        case TextSize::Size16:
+            font = &fonts::lgfxJapanGothic_16;
+            break;
+        case TextSize::Size32:
+            font = &fonts::lgfxJapanGothic_32;
+            break;
+        case TextSize::Size40:
+            font = &fonts::lgfxJapanGothic_40;
+            break;
+        default:
+            font = &fonts::lgfxJapanGothic_24;
+    }
+
+    lcd->setFont(font);
+}
+
+void TextElement::show(LGFX* const lcd)
+{
+    setFont(lcd);
+    lcd->setTextColor(_foreground.getRGB888(), _background.getRGB888());
+    lcd->drawString(_text, _x, _y);
 }
 ```
 
