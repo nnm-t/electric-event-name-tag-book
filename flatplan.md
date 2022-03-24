@@ -1,32 +1,68 @@
 # 台割
 
 - まえがき
-- M5Stack
-  - ESP32
-  - 入手先
+- ESP32
   - ペリフェラル
+    - GPIO
+    - I2C
+    - SPI
+    - UART
+    - ADC
+    - DAC
+    - PWM
+    - Wi-Fi
+    - Bluetooth
+- M5Stack
+  - 本体
+    - Basic/Gray/Fire
+    - Core2
+  - 入手先
+    - 国内
+    - 個人輸入
+  - ペリフェラル
+    - GPIO
+    - I2C
+    - SPI
+    - UART
 - 環境構築
-  - Arduino IDE
+  - ESP32 Arduino
+    - インストール
+    - 基本的な使い方
     - ライブラリ
-      - M5Stack
-      - ArduinoJson
-      - LovyanGFX
   - その他の開発環境
     - UI Flow
     - PlatformIO
     - ESP-IDF
 - 部材選定
-  - M5Stack Core2
+  - M5Stack Basic/Gray/Fire, Core2
   - Proto Module
   - M5GO Bottom
+  - Sensirion SHT31
   - 組み立て
+- プログラム
+  - ライブラリ
+    - M5Stack/M5Core2
+    - ArduinoJson
+    - LovyanGFX
+    - Adafruit NeoPixel
+    - Adafruit SHT31
 - コーディング
-  - 入出力
-    - ボタン
-    - 液晶
-      - バックライト
-    - バッテリ残量
-    - NeoPixel LED
-  - テクニック
+  - JSON読み込み
+  - ループ処理
+  - ボタン/タッチパネル状態取得
+    - フィードバック
+  - LCD描画
+    - 色
+    - テキスト設定
+    - 消去
+    - コンテンツ描画
+    - 電池残量・温湿度描画
+  - LED点灯
+  - 状態遷移
+  - Tips
+    - データ型
+    - const
+    - constexpr
+    - キャスト
 - 動作確認
 - あとがき

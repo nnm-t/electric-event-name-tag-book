@@ -1121,7 +1121,7 @@ void QRState::begin(Settings* settings)
 }
 ```
 
-#### その他
+#### Tips
 
 ##### データ型
 
