@@ -395,7 +395,7 @@ Webブラウザ上での開発が可能で、ブロックを組み立ててプ�
 M5Stack本体を購入する。
 これがなければ始まらない。
 
-今回のプログラムはプリプロセッサマクロでBasic/Gray/FireとCore2向けを切り替えてビルドできるようにコーディングしており、いずれも使用できる。
+今回のプログラムはプリプロセッサマクロでBasic/Gray/FireとCore2向けを切り替えてビルドできるようにコーディングしており、どちらにも対応するようにした。
 
 ### Proto Module
 
@@ -421,18 +421,20 @@ Core2用にはM-BUSピンヘッダの長さが2.5mmに変更され、ピン配�
 前述のM5Stack関連部材のほか、名札にするために吊り下げ用の部材を揃える。
 いずれもホームセンターや100円ショップで容易に入手できるものなので、各自入手いただきたい。
 
-今回はM5Stack関連部材の加工は安価なProto Moduleのみにとどめ、Core2などは無加工で済ませる。
+今回はM5Stack関連部材の加工は安価なProto Moduleのみにとどめ、Coreは無加工で済ませる。
 ここで紹介する組み付け手順もあくまで一例なので、各自工夫されたし。
 
 - キャップボルト (M3): 4個
+  - 構成によって必要な長さが変わるので、複数の長さを購入しておくとよい。
 - ヒートン: 2個
 - ナスカン: 2組
 - 吊り下げ紐
   - 吊り下げ名札ごと購入し、名札部分を外して紐だけ拝借する方が入手しやすいかもしれない。
 
-ヒートン2個をProto Module上部の小さな穴にねじ込んでいく。
-Core2の子基板をマイナスドライバー等でこじって先に外し、キャップボルトを外して付属Bottomを取り外す (このとき基板からバッテリ端子を外す)。
-そしてCore2 + Proto Module + M5GO Bottomの順に重ねる。
+まずはヒートン2個をProto Module上部の小さな穴にねじ込んでいく。
+次に、CoreとBattery Bottomの間をマイナスドライバー等でこじって分離する。
+Core2では子基板をマイナスドライバー等でこじって外し、キャップボルトを外して付属Bottomを取り外す (このとき基板からバッテリ端子を外す)。
+そしてCore + Proto Module + M5GO Bottomの順に重ねる。
 このままではM-BUSの差し込みだけで固定された状態で取れやすいので、四隅をキャップボルトで締める。
 締めすぎると表面のガラスパネルが浮いてきて最悪割れるので、浮き上がらないか確認しながら締め付けトルクを調整する。
 
@@ -441,7 +443,24 @@ Core2の子基板をマイナスドライバー等でこじって先に外し、
 
 ## プログラム
 
+### ビルド設定
+
+`ツール -> ボード -> ESP32 Arduino` から使用するM5Stack Coreに合わせてボード設定を選択する。
+本プログラムはフォント埋め込みの関係でサイズが大きいので、4MB FlashのBasic/Grayに限りPartition Schemeが `Default` では容量不足で書き込めず、`ツール -> Partition Scheme` から設定を変更する必要がある (16MB版であればFireの設定を流用すると `Default` でも書き込める。このときPSRAMは `Disabled` にしておく)。
+
+- Basic/Gray: `M5Stack-Core-ESP32`
+  - Partition Scheme: `No OTA (Large APP)`
+- Fire: `M5Stack-FIRE`
+  - Partition Scheme: `Default (2 x 6.5MB app, 3.6MB SPIFFS)` (デフォルト)
+- Core2: `M5Stack-Core2`
+  - Partition Scheme: `Default (2 x 6.5MB app, 3.6MB SPIFFS)` (デフォルト)
+
+余談だが、`Default` のPartition Schemeではプログラム領域が2分割されており、OTA (Over The Air) 機能でWi-Fi経由のプログラム書き換えをサポートしている。
+ここでは説明しないが、M5Stack/M5Core2ライブラリに同梱の `ArduinoOTA` ライブラリを使用すると実装できる。
+
 ### 使用ライブラリ
+
+すべてArduino IDEのライブラリマネージャ経由で導入できる。
 
 #### M5Stack/M5Core2
 
@@ -462,9 +481,7 @@ ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶�
 液晶制御用のライブラリはM5Core2ライブラリにもTFT_eSPIが同梱されているが、チューニングが行われており高速に動作する。
 
 日本語の表示には予め自分でフォントセットを用意する必要があったTFT_eSPIライブラリとは異なり、IPAフォントとefontからコンバートされた日本語フォントが同梱されている。
-日本語フォントは文字数が多くプログラム肥大化の要因になる。
-本プログラムでは16, 24, 32, 40pxの4サイズのIPAフォントを読み込ませており、Flashが4MBの機種ではパーティションスキームが標準のDefault 4MB with spiffs (1.5MB x2/1MB SPIFFS) では不足するので (OTA (Over The Air) 機能でWi-Fi経由のプログラム書き換えを実現するため、プログラム領域が2分割されている。読み書きは片方のみ行う仕組み) 、Huge APP (3MB No OTA/1MB SPIFFS) へ変更する (OTAは使えなくなる)。
-Flashが16MBの機種ではパーティションスキームに16MB Flash (3MB APP/9MB FATFS) が選べ、こちらへ変更するとプログラム領域を賄えてかつOTAにも対応する。
+ただし、文字数の多い日本語フォントを多数読み込むとプログラム肥大化の要因になる。
 
 #### Adafruit NeoPixel
 
@@ -493,8 +510,7 @@ Adafruit製モジュール向けに作られているが、他社製モジュー
 - Adafruit SHT31-D搭載 温湿度センサモジュール (スイッチサイエンス扱い: https://www.switch-science.com/catalog/3348/)
 - 秋月電子 SHT31使用 高精度温湿度センサモジュール (https://akizukidenshi.com/catalog/g/gK-12125/)
 
-オプションとして温度・湿度表示の機能を組み込んでおり、プリプロセッサマクロでコンパイル条件を設定している。
-使用する時は `config.h` のコメントアウトを外して `#define ENABLE_SHT31` を有効してからビルドする。
+本プログラムではプリプロセッサマクロで条件付きコンパイルにしてあるので、なくてもプログラムは動作する。
 
 ### コーディング
 
@@ -569,6 +585,8 @@ Settings* Settings::fromJson(JsonDocument& json_document)
     return new Settings(foreground, background, menu, led, image, text_elements, qrcode);
 }
 ```
+
+`Color` 型インスタンスの生成は `static` 関数 `Color::fromJson()` で行う。
 
 ```cpp
 Color Color::fromJson(JsonVariant& json_color)
@@ -646,6 +664,8 @@ TextElement TextElement::fromJson(JsonObject& json_element)
 }
 ```
 
+`QRCode` 型インスタンスの生成は `static` 関数 `QRCode::fromJson()` で行う。
+
 ```cpp
 // qrcode.cpp (抜粋)
 QRCode QRCode::fromJson(JsonVariant& json_qrcode)
@@ -675,20 +695,172 @@ ESP32 Arduinoのタイマー割り込みはArduino標準ライブラリのそれ
 あとはコールバック関数のブロック内に処理を記述していく。
 
 ```cpp
+// m5core2-visiting-card.ino (抜粋)
+#include "config.h"
+
+#include <Arduino.h>
+#ifdef BOARD_M5CORE
+#include <M5Stack.h>
+#endif
+#ifdef BOARD_M5CORE2
+#include <M5Core2.h>
+#endif
+#include <Ticker.h>
+
+#include <LovyanGFX.h>
+#include <Adafruit_NeoPixel.h>
+#ifdef ENABLE_SHT31
+#include <Adafruit_SHT31.h>
+#endif
+#include <ArduinoJson.h>
+
+#include "settings.h"
+#include "state-manager.h"
+
 namespace {
+    // LCD
+    LGFX lcd;
+    // Timer
     Ticker ticker;
-    // 略
+    // JSONデータ
+    StaticJsonDocument<4096> json_document;
+    // 設定 (ポインタ)
+    Settings* pSettings = nullptr;
+
+    // 画像表示/QR表示の状態
+    ImageState image_state;
+    QRState qr_state;
+    // 状態管理
+    StateManager stateManager(image_state, qr_state);
+
+    // LCD輝度定数
+    constexpr uint8_t brightness_min = 63;
+    constexpr uint8_t brightness_step = 32;
+    constexpr uint8_t brightness_max = 255;
+
+    // NeoPixelの数
+    constexpr size_t neopixel_num = 10;
+
+#ifdef BOARD_M5CORE
+    // NeoPixelのGPIOピン
+    constexpr size_t neopixel_pin = 15;
+
+#ifdef ENABLE_SHT31
+    // SHT31ライブラリ (Black/Gray/Fire: I2C1を利用)
+    Adafruit_SHT31 sht31(&Wire);
+#endif
+
+#endif
+
+#ifdef BOARD_M5CORE2
+    // NeoPixelのGPIOピン
+    constexpr size_t neopixel_pin = 2;
+
+#ifdef ENABLE_SHT31
+    // SHT31ライブラリ (Core2: I2C2を利用)
+    Adafruit_SHT31 sht31(&Wire1);
+#endif
+
+#endif
+
+    // NeoPixelライブラリ
+    Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(neopixel_num, neopixel_pin);
+
+    // LCD輝度値
+    uint8_t display_brightness = 127;
 }
+
+// 振動/LED関係の関数は後述
 
 void setup()
 {
-    // 略
+    // M5Stack初期化
+    M5.begin();
+    // LCD初期化
+    lcd.init();
+    lcd.setColorDepth(24);
+
+    // JSON読込
+    File json_file = SD.open("/settings.json");
+    DeserializationError error = deserializeJson(json_document, json_file);
+
+    if (error != DeserializationError::Ok)
+    {
+        // JSON読込失敗
+        Serial.println("JSON Deserialization Error");
+        return;
+    }
+
+    // 設定/制御の初期化
+    pSettings = Settings::fromJson(json_document);
+#ifdef ENABLE_SHT31
+    pSettings->begin(lcd, neopixel, sht31);
+#else
+    pSettings->begin(lcd, neopixel);
+#endif
+
+    // 状態管理の初期化
+    stateManager.begin(pSettings);
+
+    // デフォルトのLCD輝度
+    lcd.setBrightness(display_brightness);
+
+    // Timer割り込みの設定
     ticker.attach_ms(100, onTimerTicked);
+}
+
+void loop()
+{
+    // 空にする
 }
 
 void onTimerTicked()
 {
-    // ここにループ処理を記述
+    // これ以下にループ処理を記述
+    // M5Stack ループ処理
+    M5.update();
+
+#ifdef BOARD_M5CORE2
+    if (M5.Touch.ispressed())
+    {
+        // タッチ中: LED消灯と振動ON
+        setLed(false);
+        vibrateOn();
+    }
+    else
+    {
+        // 非タッチ: LED点灯と振動OFF
+        setLed(true);
+        vibrateOff();
+    }
+#endif
+
+    if (M5.BtnA.wasPressed())
+    {
+        // ボタンA押下: NeoPixel点灯/消灯
+        pSettings->toggleLED();
+    }
+
+    if (M5.BtnB.wasPressed())
+    {
+        // ボタンB押下: LCD輝度調整
+        display_brightness += brightness_step;
+        if (display_brightness >= brightness_max)
+        {
+            display_brightness = brightness_min;
+        }
+        lcd.setBrightness(display_brightness);
+    }
+
+    if (M5.BtnC.wasPressed())
+    {
+        // ボタンC押下: QRコード切替
+        stateManager.toggleState();
+    }
+
+    // 設定/状態管理 ループ処理
+    pSettings->update();
+    stateManager.update();
 }
 ```
 
@@ -700,9 +872,11 @@ void onTimerTicked()
 いずれも `bool` 型で返るので、`if` 文で分岐させてあげればよい。
 
 ```cpp
+// m5core2-visiting-card.inoから抜粋
 if (M5.btnA.wasPressed())
 {
-    // ボタン押下時の処理
+    // ボタンA押下
+    // 略
 }
 ```
 
@@ -721,20 +895,25 @@ Core2ではLCD下部の **○** の部分をボタンの判定として、Basic/
 - `wasPressed()`: **押した時** `true`
 - `wasReleased()`: **離した時** `true`
 
-##### M5Stack Core2 タッチパネル
+なお、Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関数で `TouchPoint` 型の座標を取得できる。
+また `M5.Touch.isPressed()` で領域関係なしにタッチ状態か否かを取得することも可能である。
 
-Core2ではタッチパネルとなっていて `M5.Touch.getPressPoint()` 関数で `TouchPoint` 型の座標を取得できる。
-また `M5.Touch.isPressed()` で領域関係なしにタッチ状態か否かを取得することも可能で、本プログラムでも電源管理IC経由で接続されている内蔵LEDとバイブレータを制御している。
+##### Core2 フィードバック
+
+Core2に搭載のタッチパネルではボタンと違って押した時の感触がないので、フィードバックを実装した。
+電源管理IC AX192経由で接続されている内蔵LEDとバイブレータを制御している。
 
 ```cpp
-// タッチ中LED消灯
+// m5core2-visiting-card.ino (抜粋)
 if (M5.Touch.ispressed())
 {
+    // タッチ中: LED消灯と振動ON
     setLed(false);
     vibrateOn();
 }
 else
 {
+    // 非タッチ: LED点灯と振動OFF
     setLed(true);
     vibrateOff();
 }
@@ -743,18 +922,22 @@ else
 `vibrateOn()`、`vibrateOff()`、`setLed()` 関数はこのように定義している。
 
 ```cpp
+// m5core2-visiting-card.ino (抜粋)
 void vibrateOn()
 {
+    // バイブレータ振動ON
     M5.Axp.SetLDOEnable(3, true);
 }
 
 void vibrateOff()
 {
+    // バイブレータ振動OFF
     M5.Axp.SetLDOEnable(3, false);
 }
 
 void setLed(bool is_on)
 {
+    // 内蔵LED
     M5.Axp.SetLed(is_on);
 }
 ```
@@ -869,6 +1052,9 @@ void TextElement::show(LGFX* const lcd)
 }
 ```
 
+`Image::show()` 関数で画像を描画する。
+`Strings::endsWith()` 関数を利用して拡張子を識別し、ファイル形式に合った関数で描画する。
+
 ```cpp
 // image.cpp (抜粋)
 void Image::show(LGFX* const lcd)
@@ -889,6 +1075,9 @@ void Image::show(LGFX* const lcd)
 }
 ```
 
+`QRCode::show()` 関数でQRコードを描画する。
+`LGFX::qrcode()` 関数を使用する。
+
 ```cpp
 // qrcode.cpp (抜粋)
 void QRCode::show(LGFX* const lcd)
@@ -896,6 +1085,9 @@ void QRCode::show(LGFX* const lcd)
     lcd->qrcode(_url, _x, _y, _width, 6);
 }
 ```
+
+各ボタンに対応する機能の説明をLCD下部へ `Menu::show()` 関数で描画する。
+最初に背景を、次に各ボタンに対応する文字列を、最後に文字列を囲む枠を描画する。
 
 ```cpp
 // menu.cpp (抜粋)
@@ -928,10 +1120,11 @@ void Menu::show(LGFX* const lcd)
 これらはプリプロセッサマクロを利用して適合するものをコンパイルするように条件を設ける。
 取得した値はLCDへ描画する。
 
-SHT31を接続している時は温度と湿度を取得してLCDへ描画する。
+SHT31を接続している時は `Adafruit_SHT31::readTemperature()` 関数で温度を、`Adafruit_SHT31::readHumidity()` 関数で湿度を取得してLCDへ描画する。
+値は `float` 型で返るので、`String` 型コンストラクタの第2引数で小数第0位 (=整数) で丸める。
 こちらもプリプロセッサマクロを利用してコンパイル条件を設ける。
 
-こちらは常時更新される内容なので、 `Settings::update()` 関数に定義して、ループ処理から呼び出す。
+これらは常時更新される内容なので、 `Settings::update()` 関数に定義して、ループ処理から呼び出す。
 
 ```cpp
 // settings.cpp (抜粋)
@@ -1097,6 +1290,9 @@ void StateManager::update()
 }
 ```
 
+`ImageState` 型はアイコンを表示する状態で、`Settings::showImage()` 関数を実行してLCDへアイコンを描画する。
+`Settings::clearLCD()` 関数での画面の消去と、`Settings::showCommon()` での共通表示の描画はどちらの状態でも実行する。
+
 ```cpp
 // image-state.cpp (抜粋)
 void ImageState::begin(Settings* settings)
@@ -1108,6 +1304,8 @@ void ImageState::begin(Settings* settings)
     _settings->showCommon();
 }
 ```
+
+`QRState` 型はQRコードを表示する状態で、`Settings::showQR()` 関数を実行してLCDへQRコードを描画する。
 
 ```cpp
 // qr-state.cpp (抜粋)
