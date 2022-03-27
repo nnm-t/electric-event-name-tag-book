@@ -14,6 +14,7 @@
     - Bluetooth
 - M5Stack
   - 本体
+    - 共通
     - Basic/Gray/Fire
     - Core2
   - 入手先
@@ -69,4 +70,5 @@
   - ビルド
   - JSON作成
 - 動作確認
+  - トラブルシューティング
 - あとがき
