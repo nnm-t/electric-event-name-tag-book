@@ -594,6 +594,15 @@ JSONを解析したデータを扱いやすくするため、`Settings` クラ�
 
 `TextElement` 型は複数個存在しうるので、インスタンスをSTLコンテナ `std::vector<T>` 型へ範囲 `for` 文を使って格納していく。
 
+- `foreground`: 文字色 (`Color` 型)
+- `background`: 背景色 (`Color` 型)
+- `menu`: メニュー (`Menu` 型)
+- `led`: LED (`LED` 型)
+- `image`: 画像 (`Image` 型)
+- 配列
+  - `text`: 文字列要素 (`TextElement` 型)
+- `qrcode`: QRコード (`QRCode` 型)
+
 ```cpp
 // settings.cpp (抜粋)
 Settings* Settings::fromJson(JsonDocument& json_document)
@@ -632,6 +641,11 @@ Settings* Settings::fromJson(JsonDocument& json_document)
 
 `Color` 型インスタンスの生成は `static` 関数 `Color::fromJson()` で行う。
 
+- 配列
+  - 0番地: 赤 (0～255)
+  - 1番地: 緑 (0～255)
+  - 2番地: 青 (0～255)
+
 ```cpp
 Color Color::fromJson(JsonVariant& json_color)
 {
@@ -644,6 +658,9 @@ Color Color::fromJson(JsonVariant& json_color)
 ```
 
 `Menu` 型インスタンスの生成は `static` 関数 `Menu::fromJson()` で行う。
+
+- `foreground`: 文字色 (`Color` 型)
+- `background`: 背景色 (`Color` 型)
 
 ```cpp
 // menu.cpp (抜粋)
@@ -661,6 +678,9 @@ Menu Menu::fromJson(JsonVariant& json_menu)
 
 `LED` 型インスタンスの生成は `static` 関数 `LED::fromJson()` で行う。
 
+- `color`: 色 (`Color` 型)
+- `pattern`: 点灯パターン
+
 ```cpp
 // led.cpp (抜粋)
 LED LED::fromJson(JsonVariant& json_led)
@@ -676,6 +696,10 @@ LED LED::fromJson(JsonVariant& json_led)
 
 `Image` 型インスタンスの生成は `static` 関数 `Image::fromJson()` で行う。
 
+- `x`: 描画位置 (左上) のx座標 [px]
+- `y`: 描画位置 (左上) のy座標 [px]
+- `src`: 画像ファイルのパス
+
 ```cpp
 // image.cpp (抜粋)
 Image Image::fromJson(JsonVariant& json_image)
@@ -689,6 +713,11 @@ Image Image::fromJson(JsonVariant& json_image)
 ```
 
 `TextElement` 型インスタンスの生成は `static` 関数 `TextElement::fromJson()` で行う。
+
+- `x`: 描画位置 (左上) のx座標 [px]
+- `y`: 描画位置 (左上) のy座標 [px]
+- `size`: フォントサイズ 16, 24, 32, 40 から選択
+- `text`: 文字列
 
 ```cpp
 // text-element.cpp (抜粋)
@@ -709,6 +738,12 @@ TextElement TextElement::fromJson(JsonObject& json_element)
 ```
 
 `QRCode` 型インスタンスの生成は `static` 関数 `QRCode::fromJson()` で行う。
+
+- `x`: 描画位置 (左上) のx座標 [px]
+- `y`: 描画位置 (左上) のy座標 [px]
+- `width`: QRコードの幅 [px]
+  - 高さも幅と同じ大きさで描画される
+- `url`: QRコードに埋め込むURL
 
 ```cpp
 // qrcode.cpp (抜粋)
@@ -1585,9 +1620,12 @@ Arduinoでは本格的なデバッグには対応していないが、`ツール
 ## 参考文献
 
 - 商品資料
+  - Espressif (https://espressif.com/)
   - M5Stack (https://m5stack.com/)
   - スイッチサイエンス (https://www.switch-science.com/)
 - 商業誌
+  - Scott Meyers (2010) Effective C++ 第3版, 小林健一郎 訳, 丸善出版
+  - Scott Meyers (2015) Effective Modern C++, 千住治郎 訳, オライリー・ジャパン
   - Interface 2020年1月号 ハードもソフトも続々登場する知っ得ワールド 定番ESP32マイコン技術百科, CQ出版社
   - Kevin Townsend, Carles Cufi, Akiba, Robert Davidson (2015) Bluetooth Low Energyをはじめよう, 水原文 訳, オライリー・ジャパン
   - 松岡貴志 (2022) ラズパイ自由自在電子工作パーツ制御完全攻略, 日経BP
