@@ -1446,6 +1446,8 @@ void LED::update(Adafruit_NeoPixel* const neopixel)
 画像を描画する `ImageState` クラスと、QRコードを描画する `QRState` クラスとの遷移を管理する `StateManager` クラスを作成した。
 両者は `IState` クラス (純粋仮想関数のみ) を継承しており、ポインタを `IState*` 型のメンバ変数に代入してポリモーフィズムを実現する。
 
+![状態遷移](images/state-manager.png)
+
 `StateManager::begin()` 関数で初期化、`StateManager::update()` 関数で描画を更新する。
 `StateManager::toggleState()` 関数を実行すると両者を切り替える。
 これらは `.ino` ファイルのループ処理から呼び出す。
