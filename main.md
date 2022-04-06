@@ -9,7 +9,7 @@
 ざっくりとESP32のデータシートを読んだので、機能の説明とともに仕様をまとめる。
 ESP32 Arduino環境で開発する場合はハードウェアを意識することはあまり多くないが、頭の片隅においておくと何かあった時に役に立つ。
 
-中国Espressif社が開発したWi-Fi/Bluetooth内蔵の32bitマイコンで、非常に安価なことから2010年代後半以降の電子工作で多用される。
+ESP32は中国Espressif社が開発したWi-Fi/Bluetooth内蔵の32bitマイコンで、非常に安価なことから2010年代後半以降の電子工作で多用される。
 
 外付けFlashとアンテナを組み込んだモジュールが市場に出回っており、日本国内でも工事設計認証 (技適) 取得済みのものが数百円で入手できる。
 
@@ -68,6 +68,7 @@ ESP32-WROOM-32D, ESP32-WROOM-32 (U), ESP32-SOLO-1, ESP32-WROVER- (I) B, ESP32-WR
 
 モジュールのランドは1.27mmピッチの表面実装なので、慣れていないと半田付けは難しい。
 ホビーユースでは、評価ボードまたはモジュール実装済みの変換基板を使うと扱いやすい。
+国内でもEspressif純正の評価ボードESP32-DevkitCなどを入手できる。
 
 ### ペリフェラル
 
@@ -266,7 +267,7 @@ Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外�
 
 ### 入手先
 
-人気の高さからか品薄気味で、希望の商品が品切れになっているときもある。
+M5Stackは人気の高さからか品薄気味で、希望の商品が品切れになっているときもある。
 多くは再生産がなされるので、しばらく待っていると在庫が回復する。
 2021年以降は半導体不足の影響も受けており、USBシリアル変換ICの変更による品番変更を伴う仕様変更も行われている。
 
@@ -367,13 +368,13 @@ Basic/Gray/FireとCore2ではピンアサインが異なり、**太字**で示�
 
 ### ESP32 Arduino
 
-![Arduino フレームワーク](images/arduino-framework.png)
+Atmel (現: Microchip) AVR等のマイコンボードである**Arduino**での開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしていて利用者も多い。
 
-Atmel (現: Microchip) AVR等のマイコンボードである**Arduino**での開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしており、利用者も多い。
+![Arduino フレームワーク](images/arduino-framework.png)
 
 Arduino IDEへインストールして使用する設計で、Arduinoの開発経験があれば違和感なく使用できる。
 一方でTimerなど一部のAPIは非互換で別個に用意されている。
-後述のESP-IDFの上で動作しており、足りない機能があってもESP-IDFのAPIをそのまま呼び出して使用できる。
+ESP32 Arduinoは後述のESP-IDFの上で動作しており (ESP-IDFはFreeRTOS上で動作する)、足りない機能があってもESP-IDFのAPIをそのまま呼び出して使用できる。
 
 プログラミング言語は、公式には**Arduino言語**と称している。
 
@@ -654,19 +655,23 @@ ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶�
 
 RGB LEDにマイコンを内蔵していて、制御信号を送り込んで任意の色で発光できるLED。
 複数のNeoPixelを数珠繋ぎに接続することが可能で、少ない配線でまとめて制御できる。
-オリジナルはWorldSemi社製だが各社から互換品が発売されている。
+オリジナルはWorldSemi社製だが、各社から同等の機能を持ったクローン品も流通している。
 
-内蔵のマイコンはWorldSemi社製で、5V駆動品は大きく分けて2種類ある。
-M5GO Baseの内蔵品はWS2812のようである。
-これらと同等の機能を持ったクローン品を搭載したLEDも流通している。
+電子工作でよく使われる5V駆動品のNeoPixelは大きく分けて2種類ある。
+M5GO Baseの内蔵品はWS2812/WS2812Bのようである。
 
-- WS2812
-  - 入力から先頭のRGB色データ (24bit) を受け取り、以降は出力に繋がれたLEDへ流す
-- WS2822
-  - 割り振られたアドレスに対応するRGB色データを受け取る
+![NeoPixel](images/peripheral-neopixel.png)
 
-制御信号はマイコンからGPIO出力をソフトウェアで操作すれば十分で、I2CやSPIを使用する必要はない。
-Arduino環境ではAdafruit Neopixelライブラリを使用すると容易に制御できる。
+- WS2812/WS2812B
+  - マイコンのGPIO出力から入力DINへ送られた先頭のRGB色データ (24bit) のみを受け取り、以降のデータは出力DOUTへ繋がれた後段のNeoPixelへそのまま流す
+  - WS2812では電源ピンがマイコン (VCC) とLED (VDD) の2つに分かれていたが、WS2812BでVDDに統合されている
+- WS2822S
+  - マイコンからアドレス指定に使うGPIO出力をアドレス入力ADRIへ接続し、アドレス出力ADROを後段のNeoPixelのADRIへ接続する。NeoPixelのアドレスは先頭から1、4、7、……、と3つ飛ばしで割り振られる
+  - RGB色データ (24bit) はマイコンのGPIO出力から全てのNeoPixelのデータ入力DAIへ同時に送られ、自身のアドレスに対応するデータを受け取る
+  - 電源ピンはマイコン (VCC) とLED (VDD) の2つに分かれている
+
+マイコンのGPIOから出力する制御信号はソフトウェアで制御しても間に合い、特別な機能を使用する必要はない。
+Arduino環境ではAdafruitが提供しているライブラリを使用すると容易に制御できる。
 
 #### Adafruit SHT31
 
@@ -1844,6 +1849,7 @@ M5GO Bottom内蔵のNeoPixelの制御が不安定なのだろうか。
 - 商品資料
   - Espressif (https://espressif.com/)
   - M5Stack (https://m5stack.com/)
+  - WorldSemi (http://www.world-semi.com/)
   - スイッチサイエンス (https://www.switch-science.com/)
 - 商業誌
   - Scott Meyers (2010) Effective C++ 第3版, 小林健一郎 訳, 丸善出版
