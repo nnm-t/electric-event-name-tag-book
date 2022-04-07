@@ -77,8 +77,30 @@ ESP32-WROOM-32D, ESP32-WROOM-32 (U), ESP32-SOLO-1, ESP32-WROVER- (I) B, ESP32-WR
 #### GPIO (General-Purpose Input/Output)
 
 マイコンの最も基本的なペリフェラルで、HIGH/LOWのデジタル入出力を行う機能。
-ESP32ではGPIO0～19, 21～23, 25～27, 32～39の34本を備える。
-GPIO34～39は入力専用で、それ以外は入出力どちらにも対応しており内蔵プルアップ/プルダウン抵抗 (回路をオープンにして論理値がふらつくのを防ぐため、VDDとの間に挟んで電位をHIGHレベルに固定するための抵抗がプルアップ抵抗。逆にGNDとの間に挟んでLOWレベルに固定するための抵抗がプルダウン抵抗) も使用できる。
+ESP32では34本を備える。
+
+|GPIO|方向|Power Domain|Pull-up <br /> Pull-down|起動モード <br /> 選択に使用|
+|--:|:--:|:--|:--:|:--:|
+|0|入力/出力|VDD3P3_RTC|○|○|
+|1|入力/出力|VDD3P3_CPU|○|-|
+|2|入力/出力|VDD3P3_RTC|○|○|
+|3|入力/出力|VDD3P3_CPU|○|-|
+|4|入力/出力|VDD3P3_RTC|○|-|
+|5|入力/出力|VDD3P3_CPU|○|○|
+|6～11|入力/出力|VDD_SDIO|○|-|
+|12|入力/出力|VDD3P3_RTC|○|○|
+|13, 14|入力/出力|VDD3P3_RTC|○|-|
+|15|入力/出力|VDD3P3_RTC|○|○|
+|16, 17|入力/出力|VDD_SDIO|○|-|
+|18, 19|入力/出力|VDD3P3_CPU|○|-|
+|21～23|入力/出力|VDD3P3_CPU|○|-|
+|25～27|入力/出力|VDD3P3_RTC|○|-|
+|32, 33|入力/出力|VDD3P3_RTC|○|-|
+|34～39|入力|VDD3P3_RTC|-|-|
+
+入力専用のGPIO34～39を除き、入出力どちらにも対応しており内蔵プルアップ/プルダウン抵抗 (回路をオープンにして論理値がふらつくのを防ぐため、VDDとの間に挟んで電位をHIGHレベルに固定するための抵抗がプルアップ抵抗。逆にGNDとの間に挟んでLOWレベルに固定するための抵抗がプルダウン抵抗) も使用できる。
+
+![プルアップ/プルダウン](images/peripheral-gpio-pullup-pulldown.png)
 
 各GPIOあたり20mA (ESP-IDFでは5, 10, 20, 30mAから変更可能) 、各Power Domainあたり合計で40mAまでドライブすることが可能。
 したがってLEDを点灯させる程度であればGPIOの電流でも事足りる。
@@ -275,10 +297,10 @@ M5Stackは人気の高さからか品薄気味で、希望の商品が品切れ�
 
 年々M5Stack社直販とのタイムラグが少なくなっていて、比較的新しい部材も入手しやすくなった。
 
-- スイッチサイエンス
+- スイッチサイエンス (https://akizukidenshi.com/)
   - 日本国内での総代理店。
-  - 千石電商、マルツパーツ館、共立電子など、スイッチサイエンス製品の取り扱いがある電子部品店では実店舗での購入も可能。
-- 秋月電子通商
+  - 千石電商、マルツパーツ館、共立電子など、スイッチサイエンス製品の取り扱いがある電子部品店にて実店舗での購入も可能。
+- 秋月電子通商 (https://akizukidenshi.com/)
   - 並行輸入品扱いで一部商品の取り扱いがある。
 
 Amazonなどの大手通販サイトでも出品がみられるが、正規ルートではないので購入は自己責任となる。
@@ -289,11 +311,11 @@ Amazonなどの大手通販サイトでも出品がみられるが、正規ル�
 購入は自己責任で。
 
 - M5Stack社 直販
-  - m5stack-store
-  - AliExpress M5Stack Official Store
+  - m5stack-store (https://shop.m5stack.com/collections/)
+  - AliExpress M5Stack Official Store (https://ja.aliexpress.com/store/911661199)
 - 正規代理店
-  - DigiKey
-  - Mouser
+  - DigiKey (https://www.digikey.jp/)
+  - Mouser (https://www.mouser.jp/)
 
 M5Stack社の直販窓口で購入すると中国から発送される。
 直販サイトは外国人向けの窓口なので中国語スキルは必要なく、何かあっても翻訳サービスを使って英文のメールが読み書きできれば最低限の対応はできる。
@@ -368,7 +390,9 @@ Basic/Gray/FireとCore2ではピンアサインが異なり、**太字**で示�
 
 ### ESP32 Arduino
 
-Atmel (現: Microchip) AVR等のマイコンボードである**Arduino**での開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしていて利用者も多い。
+リポジトリ: https://github.com/espressif/arduino-esp32
+
+Atmel (現: Microchip) AVR等のマイコンボードである**Arduino** (https://www.arduino.cc/) での開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしていて利用者も多い。
 
 ![Arduino フレームワーク](images/arduino-framework.png)
 
@@ -487,6 +511,9 @@ Arduinoは利用者が多く、著名な電子部品に対し何かしらのラ�
 
 #### Espressif IoT Devalopment Framework
 
+- リポジトリ: https://github.com/espressif/esp-idf
+- ドキュメント: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/
+
 ESP32公式の開発環境で、全ての機能を使用できる。
 C/C++で開発し (APIはC言語)、FreeRTOS上で動作する。
 
@@ -498,12 +525,16 @@ FTDI FT232HをJTAGとして使用するとブレークポイントを張るデ�
 
 #### PlatformIO
 
+https://platformio.org/
+
 Arduinoに似た環境で、最初から複数種類のマイコンとプラットフォームから選んで使用する前提で作られている。
 
 VSCodeに拡張機能をインストールして使用する。
 Arduino for VSCodeとは競合するので、インストールするのはどちらかにしておく。
 
 #### UI Flow
+
+https://flow.m5stack.com/
 
 M5Stack向けの開発環境。
 ESP32をMicroPythonインタプリタとして動作させ、Wi-Fi経由でプログラムを転送する仕組み。
@@ -628,12 +659,18 @@ Core2では子基板をマイナスドライバー等でこじって外し、キ
 
 #### M5Stack/M5Core2
 
+- M5Stack リポジトリ: https://github.com/m5stack/M5Stack
+- M5Core2 リポジトリ: https://github.com/m5stack/M5Core2
+
 M5Stack社公式のライブラリ。
 Basic/Core/FireではM5Stackライブラリを、Core2ではM5Core2ライブラリをincludeする。
 
 周辺部品を利用するためのライブラリが同梱され、呼び出しやすいようにAPIがまとめられている。
 
 #### ArduinoJson
+
+- Webサイト: https://arduinojson.org/
+- リポジトリ: https://github.com/bblanchon/ArduinoJson
 
 JSONとはJavaScript Object Notationの略で、テキストベースで構造化されたデータを表現するフォーマットである。
 当初はその名の通りJavaScriptの世界で使われていたもので、現在では幅広い言語でライブラリが整備されている。
@@ -645,6 +682,8 @@ ArduinoJSONはArduinoでJSONを読み書きするためのライブラリで、A
 
 #### LovyanGFX
 
+リポジトリ: https://github.com/lovyan03/LovyanGFX
+
 ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶用のライブラリ。
 液晶制御用のライブラリはM5Core2ライブラリにもTFT_eSPIが同梱されているが、チューニングが行われており高速に動作する。
 
@@ -653,7 +692,9 @@ ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶�
 
 #### Adafruit NeoPixel
 
-RGB LEDにマイコンを内蔵していて、制御信号を送り込んで任意の色で発光できるLED。
+リポジトリ: https://github.com/adafruit/Adafruit_NeoPixel
+
+マイコンを内蔵したRGB LEDで、制御信号を送り込んで任意の色で発光できる。
 複数のNeoPixelを数珠繋ぎに接続することが可能で、少ない配線でまとめて制御できる。
 オリジナルはWorldSemi社製だが、各社から同等の機能を持ったクローン品も流通している。
 
@@ -674,6 +715,8 @@ M5GO Baseの内蔵品はWS2812/WS2812Bのようである。
 Arduino環境ではAdafruitが提供しているライブラリを使用すると容易に制御できる。
 
 #### Adafruit SHT31
+
+リポジトリ: https://github.com/adafruit/Adafruit_SHT31
 
 Senrision社製温湿度センサSHT31用のライブラリ。
 Adafruit製モジュール向けに作られているが、他社製モジュールでも問題なく利用できる。
