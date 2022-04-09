@@ -293,6 +293,9 @@ Core、Module、Bottomの三層構造になっており、CoreとBottomの間に
   - ユニバーサル基板が付いたProto Moduleが販売されており、自作の回路をModule化することもできる。
 - Bottom: LiPoバッテリが収められた底面モジュール。
 
+![表面](images/m5stack-front.jpg)
+![裏面](images/m5stack-back.jpg)
+
 重ねられた部材の取り外しは、右側面の隙間からマイナスドライバーを差し込んで分離する。
 四隅にはネジ穴が開けられており、M3のキャップボルトと2.5mmの六角レンチで強く固定できる。 (一部のパーツに付属するほか、ボルトセットの販売もある)
 さらにBottomには磁石が内蔵されていて、スチール面に貼り付けることができる。
@@ -335,7 +338,12 @@ USBケーブルから給電されると自動的に起動し、電源OFFの操�
 外部接続端子はM-BUSとGrove互換ポートのみで、内蔵部品やGroveモジュールを動かす用途に向く。
 M-BUSにはIMU (BMM150 + MPU6886) とマイク (SPM1423) が搭載された子基板が装着済み。
 
+![Core2](images/m5stack-core2.jpg)
+
 LiPoバッテリは390mAhへ増量しており、Coreの底面と面一になる専用のBottomが付属する。
+
+![Bottom (底面)](images/m5core2-bottom.jpg)
+![Bottom (天面)](images/m5core2-bottom-back.jpg)
 
 Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外にGPIOなど各種ペリフェラルを割り当てて使用できるようになっている。
 このためI2Cを使用する際は `GPIO21`/`GPIO21` へ割り当てられた `I2C` とは別系統になり、`I2C1` を割り当てる。
@@ -637,11 +645,19 @@ M-BUSピンソケット/ピンヘッダ取り付け済みのユニバーサル�
 
 ケースの上下には予め小さなが穴2つずつ、大きな穴 (ケーブルを通すためのもの) が1つずつ開けられている。
 側面にはスリットも開けられている。
+画像ではすでに小さな穴を利用してヒートンを取り付けている。
+
+![天面](images/proto-module.jpg)
+![底面](images/proto-module-back.jpg)
 
 ### M5GO Bottom
 
 NeoPixel (10個)、赤外LED、赤外線センサを内蔵し、Grove互換ポートB (GPIO) / C (UART) が引き出された拡張用のBottom。
 600mAhの比較的大きなLiPoバッテリを内蔵しており、単なる大容量バッテリとしても使用できる (その代わり、Battery Bottomには備わるピンヘッダ/ピンソケットは無い)。
+
+![天面](images/m5go-bottom.jpg)
+![底面](images/m5go-bottom-back.jpg)
+
 底面には電源 (とI2C) 端子が引き出されていて、別売のM5GO/Fire チャージベースに付いているポゴピンを介し、CoreにUSBケーブルを接続せずに充電できる。
 元々はM5Stack Fire / M5GO IoT スターターキットの付属品だが、単品販売もされている。
 
