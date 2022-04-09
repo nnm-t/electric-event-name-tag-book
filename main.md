@@ -6,9 +6,6 @@
 
 ## ESP32
 
-ざっくりとESP32のデータシートを読んだので、機能の説明とともに仕様をまとめる。
-ESP32 Arduino環境で開発する場合はハードウェアを意識することはあまり多くないが、頭の片隅においておくと何かあった時に役に立つ。
-
 ESP32は中国Espressif社が開発したWi-Fi/Bluetooth内蔵の32bitマイコンで、非常に安価なことから2010年代後半以降の電子工作で多用される。
 
 外付けFlashとアンテナを組み込んだモジュールが市場に出回っており、日本国内でも工事設計認証 (技適) 取得済みのものが数百円で入手できる。
@@ -790,6 +787,11 @@ Adafruit製モジュール向けに作られているが、他社製モジュー
 ### コーディング
 
 ハードウェアと開発環境、ライブラリが揃ったので、この先はソフトウェアで具体的な処理を作り込んでいく。
+筆者はC++11で追加された言語仕様を多用してコーディングした。
+
+概ねクラスごとにヘッダファイル `.h` とソースファイル `.cpp` を作成し、すべて同じディレクトリに置いて分割コンパイルを行わせた。
+二重インクルードを防ぐた、めヘッダファイルには一度しか読み込ませないためのインクルードガードが必要になる。
+`#ifndef` と `#define` を使うのが伝統的な手法だが、筆者はコンパイラでの拡張機能である `#pragma once` で済ませている。
 
 紙面の都合上、ソースコードの掲載は原則としてソースファイルに記述する定義のみとした。
 ヘッダファイルに記述する宣言などはリポジトリからソース一式を入手して確認いただきたい。
@@ -881,6 +883,7 @@ Settings* Settings::fromJson(JsonDocument& json_document)
   - 2番地: 青 (0～255)
 
 ```cpp
+// color.cpp (抜粋)
 Color Color::fromJson(JsonVariant& json_color)
 {
     const uint8_t red = json_color[0];
@@ -1730,9 +1733,60 @@ uint8_t* piyo = const_cast<uint8_t*>(fuga);
 スコープを持つので影響範囲を制御できる。
 
 - 戻り値の型はリテラル型のみ、非 `const` 参照にはできない
+  - リテラル型: 組み込み型やリテラル型への参照や配列。およびリテラル型のみをメンバに持ち `constexpr` コンストラクタ等で初期化できるクラスや構造体
 - `if` 文は使用できず、条件分岐は三項演算子で処理する (C++14から `if` 文も使用可能)
 - 再帰呼び出しは512回までを推奨
-- `constexpr` 変数の型にするクラスは、 `constexpr` コンストラクタとメンバ関数 (自動的に `const` メンバ関数になる) のみ使用できる
+- `constexpr` 変数の型として使用するクラスは、 `constexpr` コンストラクタとメンバ関数 (自動的に `const` メンバ関数になる) のみ使用できる
+
+`constexpr` 関数は引数にリテラルや `constexpr` 変数を与えるとコンパイル時に処理され、一方で非 `constexpr` 変数を与えると実行時に処理される。
+
+```cpp
+// Vector クラスはリテラル型の条件を満たす
+class Vector
+{
+    const int32_t _x;
+    const int32_t _y;
+
+public:
+    constexpr Vector(const int32_t x, const int32_t y) : _x(x), _y(y)
+    {
+
+    }
+
+    constexpr int32_t get_x() const
+    {
+        return _x;
+    }
+
+    constexpr int32_t get_y() const
+    {
+        return _x;
+    }
+
+    constexpr bool operator==(const Vector other) const
+    {
+        return (_x == other.get_x()) && (_y == other.get_y());
+    }
+
+    constexpr Vector operator+(const Vector other) const
+    {
+        return Vector(_x + other.get_x(), _y + other.get_y());
+    }
+
+    constexpr Vector operator-(const Vector other) const
+    {
+        return Vector(_x - other.get_x(), _y - other.get_y());
+    }
+};
+
+// すべてコンパイル時定数として処理される
+constexpr const int32_t zero = 0;
+constexpr const int32_t one = 1;
+
+constexpr const Vector top(zero, one);
+constexpr const Vector right(one, zero);
+constexpr const Vector top_right = top + right;
+```
 
 ##### C++形式のキャスト
 
