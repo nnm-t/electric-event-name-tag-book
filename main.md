@@ -51,9 +51,11 @@ Espressifからはチップに加え、周辺部品を組み込み済のモジ�
 前述のチップに周辺部品を搭載して缶に収め、使いやすくしたモジュールが用意されている。
 
 Espressifでは多種のモジュールを発売しているが、工事設計認証 (いわゆる技適) を取得しているモジュールは一部のみである。
-本節では、現行品かつ工事設計認証取得済のモジュールを紹介する。
+本節では、現行品かつ工事設計認証取得済のモジュールを紹介する (画像はESP32-WROOM-32E)。
 
-ESP32-WROOM-32D, ESP32-WROOM-32 (U), ESP32-SOLO-1, ESP32-WROVER- (I) B, ESP32-WROVER (-I)など旧製品はNRND (Not Recommended for New Design: 新規設計非推奨) となっている。
+![ESP32-WROOM-32E](images/esp-wroom-32e.jpg)
+
+なお、ESP32-WROOM-32D, ESP32-WROOM-32 (U), ESP32-SOLO-1, ESP32-WROVER- (I) B, ESP32-WROVER (-I)など旧製品はNRND (Not Recommended for New Design: 新規設計非推奨) となっている。
 
 |型番|採用 <br /> チップ|Flash <br /> [MB]|PSRAM <br /> [MB]|アンテナ|備考|
 |:--|:--|--:|--:|:--|:--|
@@ -63,13 +65,20 @@ ESP32-WROOM-32D, ESP32-WROOM-32 (U), ESP32-SOLO-1, ESP32-WROVER- (I) B, ESP32-WR
 |ESP32-WROVER-IE|ESP32-D0WD-V3|4/8/16|8|IPEX||
 |ESP32-PICO-V3-ZERO|ESP32-PICO-V3|4|-|PCB <br /> IPEX|ACK (Alexa Connect Kit) 開発専用
 
-モジュールのランドは1.27mmピッチの表面実装なので、慣れていないと半田付けは難しい。
+モジュールは1.27mmピッチの表面実装なので、慣れていないと半田付けは難しい。
 ホビーユースでは、評価ボードまたはモジュール実装済みの変換基板を使うと扱いやすい。
-国内でもEspressif純正の評価ボードESP32-DevkitCなどを入手できる。
+Espressifは純正の評価ボードESP32-DevkitCなどを発売しており、最新のESP32-WROOM-32EやESP32-WROVER-Eを搭載したボードは国内では主に秋月電子で取り扱いがある。
+
+- Espressif ESP32-DevKitC-32E (ESP32-WROOM-32E): https://akizukidenshi.com/catalog/g/gM-15673/
+- ESP32-DevKitC-VE (ESP32-WROVER-E): https://akizukidenshi.com/catalog/g/gM-15674/
+- 秋月電子通商 ESP32-WROOM-32Eマイコンボード: https://akizukidenshi.com/catalog/g/gK-16108/
+  - USBシリアル変換IC無し
 
 ### ペリフェラル
 
 直訳では**周辺機器**だが、マイコンの世界では内蔵の入出力機能のことをいう。
+
+<!-- ここに記載していないペリフェラルも搭載している -->
 
 #### GPIO (General-Purpose Input/Output)
 
@@ -320,17 +329,19 @@ USBケーブルから給電されると自動的に起動し、電源OFFの操�
 初期からある本体で、周辺部品の違いで3種類用意されている。
 比較的価格が安く、他の電子部品と接続しやすいなど後発のCore2と棲み分けがなされており、執筆時点に至るまで併売されている。
 
-- Basic: 基本的な製品。
+- Basic: 基本的な製品 (画像中央、左はスケルトンケースの限定版)。
   - 150mAhのLiPoバッテリが装着されたBattery Bottomが装着されている。M-BUSの配線がピンヘッダ/ピンソケットが引き出されており、付属のジャンパワイヤでブレッドボード等と接続できる。
-- Gray: BasicにIMU (BMM150 + MPU6886) が加えられた上位版。
+- Gray: BasicにIMU (BMM150 + MPU6886) が加えられた上位版 (画像右)。
 - Fire: Grayに加えてMCUにPSRAMが接続されている。Grove B/CポートとNeoPixel付きのM5GO Bottomが装着されている。
+
+![M5Stack Basic/Gray/Fire](images/m5stack-core.jpg)
 
 表面にはボタン3個を備えており、プログラムから自由に扱える。
 スピーカーも内蔵しており、内蔵DACからアナログ信号でアンプ (NS4168) を通して接続されている。
 
 電源スイッチは左側面にあり、1回押すと電源ON、動作中に1回押すとリセット、2回押すと電源OFFである。
 
-![M5Stack Basic/Gray/Core](images/m5stack-connection.png)
+![M5Stack Basic/Gray/Core 周辺部品接続図](images/m5stack-connection.png)
 
 #### Core2
 
@@ -338,12 +349,12 @@ USBケーブルから給電されると自動的に起動し、電源OFFの操�
 外部接続端子はM-BUSとGrove互換ポートのみで、内蔵部品やGroveモジュールを動かす用途に向く。
 M-BUSにはIMU (BMM150 + MPU6886) とマイク (SPM1423) が搭載された子基板が装着済み。
 
-![Core2](images/m5stack-core2.jpg)
+![M5Stack Core2](images/m5stack-core2.jpg)
 
 LiPoバッテリは390mAhへ増量しており、Coreの底面と面一になる専用のBottomが付属する。
 
-![Bottom (底面)](images/m5core2-bottom.jpg)
-![Bottom (天面)](images/m5core2-bottom-back.jpg)
+![Core2専用Bottom (底面)](images/m5core2-bottom.jpg)
+![Core2専用Bottom (天面)](images/m5core2-bottom-back.jpg)
 
 Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外にGPIOなど各種ペリフェラルを割り当てて使用できるようになっている。
 このためI2Cを使用する際は `GPIO21`/`GPIO21` へ割り当てられた `I2C` とは別系統になり、`I2C1` を割り当てる。
@@ -356,7 +367,7 @@ Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外�
 これらはAXP192のAPIを使用して制御できる。
 電源スイッチもAXP192へ接続されていることから操作が変更されており、左側面の電源スイッチ長押しで電源ON/OFF、下側面のリセットスイッチでリセット操作を行う。
 
-![M5Stack Core2](images/m5stack-core2-connection.png)
+![M5Stack Core2 周辺部品接続図](images/m5stack-core2-connection.png)
 
 ### 入手先
 
@@ -684,6 +695,10 @@ Senserion社製の温湿度センサで、夏場の暑い即売会で室温と�
 
 モジュールはProto Moduleへ半田付けして、3.3V、SDA、SCL、GNDの4本を結線する。
 このとき半田のヤニがセンサ本体の測定穴に飛ばないように、センサを裏向きにしての半田付けが推奨されている。
+
+![Proto Moduleへ半田付けしたSHT31](images/sht31-proto-module-back.jpg)
+![Proto Module配線](images/sht31-proto-module.jpg)
+
 今回はSDAを `GPIO21`、SCLを `GPIO22` へ接続したが、Coreの種類によって使用するI2Cの系統が異なり、Basic/Gray/Fireでは `I2C` が、Core2では `I2C1` が割り当てられている (Core2では `I2C` をGrove互換ポートに接続された `GPIO32` / `GPIO33` へ割り当てることが想定されている)。
 両方に対応させる時は条件付きコンパイルで分岐させる。
 
@@ -705,6 +720,8 @@ Senserion社製の温湿度センサで、夏場の暑い即売会で室温と�
 - 吊り下げ紐
   - 吊り下げ名札ごと購入し、名札部分を外して紐だけ拝借する方が入手しやすいかもしれない。
 
+![名札制作用パーツ](images/name-tag-parts.jpg)
+
 まずはヒートン2個をProto Module上部の小さな穴にねじ込んでいく。
 次に、CoreとBattery Bottomの間をマイナスドライバー等でこじって分離する。
 Core2では子基板をマイナスドライバー等でこじって外し、キャップボルトを外して付属Bottomを取り外す (このとき基板からバッテリ端子を外す)。
@@ -713,7 +730,9 @@ Core2では子基板をマイナスドライバー等でこじって外し、キ
 締めすぎると表面のガラスパネルが浮いてきて最悪割れるので、浮き上がらないか確認しながら締め付けトルクを調整する。
 
 吊り下げ紐にはナスカン2組を通しておき、名札として使用する時に環を開けてヒートンに通す。
-これで紐が不要なときは環を開けて取り外せるし、逆の手順を踏んでProto Moduleを外せばCore2を完全に元の状態に戻せる。
+これで紐が不要なときは環を開けて取り外せるし、逆の手順を踏んでProto Moduleを外せばCoreを完全に元の状態に戻せる。
+
+![名札組み立て](images/name-tag-assembly.jpg)
 
 ## プログラム
 
@@ -2013,10 +2032,12 @@ Core2で1台制作して筆者が使用し、Basic/Grayで2台制作して交流
 - 2021/12/30-31 コミックマーケット99
 - 2022/01/16 こみっく☆トレジャー39
 
-ちょっとしたギミックの追加として、側面ないし裏面には通販で入手したNFCタグを貼り付けた。
+ちょっとしたギミックの追加として、裏面 (Battery Bottomを装着した個体) または側面 (M5GO Bottomを装着した個体) には通販で入手したNFCタグを貼り付けた。
 当然ながらこのNFCタグはM5Stackの動作には一切関与していない。
 NFCタグにはAndroidアプリなどでデータを書き込むことが可能で、今回は名札の使用者のTwitterアカウントのURLを書き込んでおいた。
 NFCを有効にしたスマートフォンで読み込むとそのURLへ移動することができる。
+
+![NFCタグ貼り付け](images/nfc-tag.jpg)
 
 3台のうち2台はM5GO Bottomを取り付けている。
 コミックマーケット99 2日目にはM5GO Charging Baseを持ち込んでいて、筆者のサークルスペースに設置していた (電源はモバイルバッテリから給電)。
