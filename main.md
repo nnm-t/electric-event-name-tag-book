@@ -81,7 +81,18 @@ Espressifは純正の評価ボードESP32-DevkitCなどを発売しており、�
 
 直訳では**周辺機器**だが、マイコンの世界では内蔵の入出力機能のことをいう。
 
-<!-- ここに記載していないペリフェラルも搭載している -->
+ESP32は本節で紹介しているものの他に下記のペリフェラルを搭載している。
+これらの詳細については、EspressifのWebサイトで公開されているデータシートとTechnical Reference Manualを参照されたい。
+
+- Hall Sensor: 磁気センサ
+- Touch Sensor: 静電容量タッチセンサの信号検出
+- Ethernet MAC (Media Access Controller): 有線LAN論理層
+- SD/SDIO/MMC Host
+- SDIO/SPI Slave
+- I2S (Inter-IC Sound): 音声データのシリアル伝送
+- Inframed Remote Controller: 赤外線リモコン用の波形送受信
+- TWAI (Two-Wire Automotive Interface): CAN (Controller Area Network) 互換
+- AES/RSA/ECC アクセラレータ
 
 #### GPIO (General-Purpose Input/Output)
 
