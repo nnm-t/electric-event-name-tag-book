@@ -39,7 +39,7 @@ ESP32は中国Espressif社が開発したWi-Fi/Bluetooth内蔵の32bitマイコ�
   - Bluetooth BR/EDR + Bluetooth Low Energy
 - 駆動電圧: 3.3V
 
-![ESP32 アーキテクチャ](images/esp32-architecture.png)
+![ESP32 アーキテクチャ](images/esp32-architecture.png) {width=10cm}
 
 Webサイトにはドキュメント (英語/中国語) が数多く公開されている。
 本書はデータシートを参照して執筆しているが、改訂の頻度も高いので各自で最新の資料を参照されたし。
@@ -73,7 +73,7 @@ Espressifからはチップに加え、周辺部品を組み込み済のモジ�
 Espressifでは多種のモジュールを発売しているが、工事設計認証 (いわゆる技適) を取得しているモジュールは一部のみである。
 本節では、現行品かつ工事設計認証取得済のモジュールを紹介する (画像はESP32-WROOM-32E)。
 
-![ESP32-WROOM-32E](images/esp-wroom-32e.jpg)
+![ESP32-WROOM-32E](images/esp-wroom-32e.jpg) {width=8cm}
 
 なお、ESP32-WROOM-32D, ESP32-WROOM-32 (U), ESP32-SOLO-1, ESP32-WROVER- (I) B, ESP32-WROVER (-I)など旧製品はNRND (Not Recommended for New Design: 新規設計非推奨) となっている。
 
@@ -137,7 +137,7 @@ ESP32では34本を備える。
 
 入力専用のGPIO34～39を除き、入出力どちらにも対応しており内蔵プルアップ/プルダウン抵抗 (回路をオープンにして論理値がふらつくのを防ぐため、VDDとの間に挟んで電位をHIGHレベルに固定するための抵抗がプルアップ抵抗。逆にGNDとの間に挟んでLOWレベルに固定するための抵抗がプルダウン抵抗) も使用できる。
 
-![プルアップ/プルダウン](images/peripheral-gpio-pullup-pulldown.png)
+![プルアップ/プルダウン](images/peripheral-gpio-pullup-pulldown.png) {width=10cm}
 
 各GPIOあたり20mA (ESP-IDFでは5, 10, 20, 30mAから変更可能) 、各Power Domainあたり合計で40mAまでドライブすることが可能。
 したがってLEDを点灯させる程度であればGPIOの電流でも事足りる。
@@ -165,7 +165,7 @@ GPIO5とGPIO15もSDIOの動作タイミングやログ出力に関わってい�
 SCL (シリアルクロック) と SDA (シリアルデータ) の2本の信号線で半二重通信を実現する規格。
 通信速度は100～400kbpsと遅く配線も長くするのには向かないので、主に基板上のチップ間の接続に用いられる。
 
-![I2C](images/peripheral-i2c.png)
+![I2C](images/peripheral-i2c.png) {width=8cm}
 
 なんといっても信号線の少なさが利点であり、**7bitのアドレス**でスレーブを識別することから1つのマスターに対し複数のスレーブを接続することができる (アドレスが被るスレーブは同一系統に接続できない)。
 SCLとSDAは共にプルアップしておく必要があるが、ESP32などマイコン側にプルアップ抵抗を内蔵している環境では外付けする必要はない。
@@ -177,7 +177,7 @@ I2Cの「2」は上付きで表記する。
 I2Cの通信タイミングは次の通りである。
 書き込み、読み込みともに複数の方式がある。
 
-![I2C タイミングチャート](images/peripheral-i2c-timing.png)
+![I2C タイミングチャート](images/peripheral-i2c-timing.png) {width=12cm}
 
 ##### 書き込み (SMBus方式)
 
@@ -221,7 +221,7 @@ SCL (シリアルクロック), MISO (マスターイン/スレーブアウト),
 I2C同様基板上のチップ間での通信に用いられる規格だが、こちらは1～2Mbpsの速度が出せる。
 あのSDカードもSPIのインターフェースを備えている。
 
-![SPI](images/peripheral-spi.png)
+![SPI](images/peripheral-spi.png) {width=8cm}
 
 1つのマスターからSCL, MISO, MOSIは複数のスレーブに接続可能だが、SSはスレーブの数だけ別々に接続する。
 SSのHIGH/LOWで通信相手を識別するので、I2Cのアドレス指定のような動作は必要ない。
@@ -235,7 +235,7 @@ ESP32は `SPI`, `HSPI`, `VSPI` の3系統のSPIを持っている。
 TXは相手側のRXに、RXは相手側のTXに接続する。
 PCの世界では同様の通信方式がRS-232Cにて使用されてきた (RS-232C = UARTではない。論理レベルや論理値が異なる)。
 
-![UART](images/peripheral-uart.png)
+![UART](images/peripheral-uart.png) {width=6cm}
 
 フロー制御用の信号としてDTR, RTSも用意されているが使用しなくても動作する。
 クロック信号を使った同期を取らず誤り検出の機能も持たない (ソフトウェア上で対応することはできる) ので、受信データが化けたり欠落することもある。
@@ -243,7 +243,7 @@ PCの世界では同様の通信方式がRS-232Cにて使用されてきた (RS-
 UARTのフレーム構造は次の通りで、設定したデータビット数ごとに送信する。
 設定を伝える仕組みもないので、通信前に予めフレームの設定を決め打ちしておく必要がある。
 
-![UARTフレーム](images/uart-frame.png)
+![UARTフレーム](images/uart-frame.png) {width=10cm}
 
 通信速度 (慣例的にボーレートとも呼ばれる) は9600bps、115.2kbpsなどが多く使われていて、ハードウェアが速度に追い付くのであればそれ以上でも通信できる。
 
@@ -287,7 +287,7 @@ ESP32では8bit (0～255) 出力のDACを2ch備え、`DAC1` はGPIO25、`DAC2` �
 日本語では**パルス幅変調**といい、任意の周波数 ((1/周期 [s]) [Hz]) とduty比 (周期に対し、HIGHになる時間の比率) でHIGH/LOW出力を切り替える機能。
 波形にすると図のようになる。
 
-![PWM波形](images/pwm-waveforms.png)
+![PWM波形](images/pwm-waveforms.png) {width=8cm}
 
 HIGHの電圧を出力しながらもduty比の変更で平均電圧を制御できるので、動作に一定以上の電圧を求められる (=DACでアナログ出力する電圧では電圧不足で動かしにくい) モータの速度やLEDの明るさ制御などで使用される。
 
@@ -347,8 +347,9 @@ Core、Module、Bottomの三層構造になっており、CoreとBottomの間に
   - ユニバーサル基板が付いたProto Moduleが販売されており、自作の回路をModule化することもできる。
 - Bottom: LiPoバッテリが収められた底面モジュール。
 
-![表面](images/m5stack-front.jpg)
-![裏面](images/m5stack-back.jpg)
+![表面](images/m5stack-front.jpg) {width=10cm}
+
+![裏面](images/m5stack-back.jpg) {width=10cm}
 
 重ねられた部材の取り外しは、右側面の隙間からマイナスドライバーを差し込んで分離する。
 四隅にはネジ穴が開けられており、M3のキャップボルトと2.5mmの六角レンチで強く固定できる。 (一部のパーツに付属するほか、ボルトセットの販売もある)
@@ -379,14 +380,14 @@ USBケーブルから給電されると自動的に起動し、電源OFFの操�
 - Gray: BasicにIMU (BMM150 + MPU6886) が加えられた上位版 (画像右)。
 - Fire: Grayに加えてMCUにPSRAMが接続されている。Grove B/CポートとNeoPixel付きのM5GO Bottomが装着されている。
 
-![M5Stack Basic/Gray/Fire](images/m5stack-core.jpg)
+![M5Stack Basic/Gray/Fire](images/m5stack-core.jpg) {width=10cm}
 
 表面にはボタン3個を備えており、プログラムから自由に扱える。
 スピーカーも内蔵しており、内蔵DACからアナログ信号でアンプ (NS4168) を通して接続されている。
 
 電源スイッチは左側面にあり、1回押すと電源ON、動作中に1回押すとリセット、2回押すと電源OFFである。
 
-![M5Stack Basic/Gray/Core 周辺部品接続図](images/m5stack-connection.png)
+![M5Stack Basic/Gray/Core 周辺部品接続図](images/m5stack-connection.png) {width=10cm}
 
 #### Core2
 
@@ -394,12 +395,12 @@ USBケーブルから給電されると自動的に起動し、電源OFFの操�
 外部接続端子はM-BUSとGrove互換ポートのみで、内蔵部品やGroveモジュールを動かす用途に向く。
 M-BUSにはIMU (BMM150 + MPU6886) とマイク (SPM1423) が搭載された子基板が装着済み。
 
-![M5Stack Core2](images/m5stack-core2.jpg)
+![M5Stack Core2](images/m5stack-core2.jpg) {width=8cm}
 
 LiPoバッテリは390mAhへ増量しており、Coreの底面と面一になる専用のBottomが付属する。
 
-![Core2専用Bottom (底面)](images/m5core2-bottom.jpg)
-![Core2専用Bottom (天面)](images/m5core2-bottom-back.jpg)
+![Core2専用Bottom (底面)](images/m5core2-bottom.jpg) {width=6cm}
+![Core2専用Bottom (天面)](images/m5core2-bottom-back.jpg) {width=6cm}
 
 Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外にGPIOなど各種ペリフェラルを割り当てて使用できるようになっている。
 このためI2Cを使用する際は `GPIO21`/`GPIO21` へ割り当てられた `I2C` とは別系統になり、`I2C1` を割り当てる。
@@ -412,7 +413,7 @@ Grove互換ポートが `GPIO32`/`GPIO33` へ変更されており、I2C以外�
 これらはAXP192のAPIを使用して制御できる。
 電源スイッチもAXP192へ接続されていることから操作が変更されており、左側面の電源スイッチ長押しで電源ON/OFF、下側面のリセットスイッチでリセット操作を行う。
 
-![M5Stack Core2 周辺部品接続図](images/m5stack-core2-connection.png)
+![M5Stack Core2 周辺部品接続図](images/m5stack-core2-connection.png) {width=10cm}
 
 ### 入手先
 
@@ -507,7 +508,7 @@ Core2ではGrove互換ポートのピン配置が変更され、I2C以外でも�
 
 Core背面にはM5Stack独自のM-BUSがピンソケットで引き出されている。
 
-![M-BUS](images/m-bus.png)
+![M-BUS](images/m-bus.png) {width=8cm}
 
 Basic/Gray/FireとCore2ではピンアサインが異なり、**太字**で示したピンが変更されている。
 概ね互換性が考慮されているが、Core2では `PA_SDA` と `PA_SCL` (Grove互換ポートと接続) が増え、`GPIO` の配置がずれている。
@@ -524,7 +525,7 @@ Basic/Gray/FireとCore2ではピンアサインが異なり、**太字**で示�
 
 Atmel (現: Microchip) AVR等のマイコンボードである**Arduino** (https://www.arduino.cc/) での開発環境をAPI互換でESP32へ移植したもので、開発元のEspressif自らメンテナンスしていて利用者も多い。
 
-![Arduino フレームワーク](images/arduino-framework.png)
+![Arduino フレームワーク](images/arduino-framework.png) {width=8cm}
 
 Arduino IDEへインストールして使用する設計で、Arduinoの開発経験があれば違和感なく使用できる。
 一方でTimerなど一部のAPIは非互換で別個に用意されている。
@@ -609,7 +610,7 @@ M5StackをPCとUSBで接続した時にデバイスマネージャで**不明な
 
 #### 基本的な使い方
 
-![Arduino IDE](images/arduino-ide.png)
+![Arduino IDE](images/arduino-ide.png) {width=8cm}
 
 `ツール` -> `ボード` -> `ESP32 Arduino` からマイコンボードを選択する。
 目的のボードが一覧に無いときは**ESP32 Dev Module**を選んでおくと素のESP32として開発できる。
@@ -708,16 +709,16 @@ M-BUSピンソケット/ピンヘッダ取り付け済みのユニバーサル�
 側面にはスリットも開けられている。
 画像ではすでに小さな穴を利用してヒートンを取り付けている。
 
-![天面](images/proto-module.jpg)
-![底面](images/proto-module-back.jpg)
+![天面](images/proto-module.jpg) {width=6cm}
+![底面](images/proto-module-back.jpg) {width=6cm}
 
 ### M5GO Bottom
 
 NeoPixel (10個)、赤外LED、赤外線センサを内蔵し、Grove互換ポートB (GPIO) / C (UART) が引き出された拡張用のBottom。
 600mAhの比較的大きなLiPoバッテリを内蔵しており、単なる大容量バッテリとしても使用できる (その代わり、Battery Bottomには備わるピンヘッダ/ピンソケットは無い)。
 
-![天面](images/m5go-bottom.jpg)
-![底面](images/m5go-bottom-back.jpg)
+![天面](images/m5go-bottom.jpg) {width=6cm}
+![底面](images/m5go-bottom-back.jpg) {width=6cm}
 
 底面には電源 (とI2C) 端子が引き出されていて、別売のM5GO/Fire チャージベースに付いているポゴピンを介し、CoreにUSBケーブルを接続せずに充電できる。
 元々はM5Stack Fire / M5GO IoT スターターキットの付属品だが、単品販売もされている。
@@ -741,8 +742,8 @@ Senserion社製の温湿度センサで、夏場の暑い即売会で室温と�
 モジュールはProto Moduleへ半田付けして、3.3V、SDA、SCL、GNDの4本を結線する。
 このとき半田のヤニがセンサ本体の測定穴に飛ばないように、センサを裏向きにしての半田付けが推奨されている。
 
-![Proto Moduleへ半田付けしたSHT31](images/sht31-proto-module-back.jpg)
-![Proto Module配線](images/sht31-proto-module.jpg)
+![Proto Moduleへ半田付けしたSHT31](images/sht31-proto-module-back.jpg) {width=6cm}
+![Proto Module配線](images/sht31-proto-module.jpg) {width=6cm}
 
 今回はSDAを `GPIO21`、SCLを `GPIO22` へ接続したが、Coreの種類によって使用するI2Cの系統が異なり、Basic/Gray/Fireでは `I2C` が、Core2では `I2C1` が割り当てられている (Core2では `I2C` をGrove互換ポートに接続された `GPIO32` / `GPIO33` へ割り当てることが想定されている)。
 両方に対応させる時は条件付きコンパイルで分岐させる。
@@ -750,7 +751,7 @@ Senserion社製の温湿度センサで、夏場の暑い即売会で室温と�
 配線は図の通り。
 図には記載していないが、SHT31はアドレスピンの接続によってI2Cアドレスが `0x44` または `0x45` のどちらかに決まるので、モジュールの基板パターンに従って適切に結線するかオープンにする。
 
-![SHT31 配線図](images/sht31-connect.png)
+![SHT31 配線図](images/sht31-connect.png) {width=8cm}
 
 ### 組み立て
 
@@ -768,7 +769,7 @@ Senserion社製の温湿度センサで、夏場の暑い即売会で室温と�
 - 吊り下げ紐
   - 吊り下げ名札ごと購入し、名札部分を外して紐だけ拝借する方が入手しやすいかもしれない。
 
-![名札制作用パーツ](images/name-tag-parts.jpg)
+![名札制作用パーツ](images/name-tag-parts.jpg) {width=8cm}
 
 まずはヒートン2個をProto Module上部の小さな穴にねじ込んでいく。
 次に、CoreとBattery Bottomの間をマイナスドライバー等でこじって分離する。
@@ -780,7 +781,7 @@ Core2では子基板をマイナスドライバー等でこじって外し、キ
 吊り下げ紐にはナスカン2組を通しておき、名札として使用する時に環を開けてヒートンに通す。
 これで紐が不要なときは環を開けて取り外せるし、逆の手順を踏んでProto Moduleを外せばCoreを完全に元の状態に戻せる。
 
-![名札組み立て](images/name-tag-assembly.jpg)
+![名札組み立て](images/name-tag-assembly.jpg) {width=6cm}
 
 ## プログラム
 
@@ -853,7 +854,7 @@ ESP32 (ESP8266/ATSAMD51にも対応) とSPI, I2C, 8bitパラレル接続液晶�
 電子工作でよく使われる5V駆動品のNeoPixelは大きく分けて2種類ある。
 M5GO Baseの内蔵品はWS2812/WS2812Bのようである。
 
-![NeoPixel](images/peripheral-neopixel.png)
+![NeoPixel](images/peripheral-neopixel.png) {width=10cm}
 
 - WS2812/WS2812B
   - マイコンのGPIO出力から入力DINへ送られた先頭のRGB色データ (24bit) のみを受け取り、以降のデータは出力DOUTへ繋がれた後段のNeoPixelへそのまま流す
@@ -1677,7 +1678,7 @@ void LED::update(Adafruit_NeoPixel* const neopixel)
 画像を描画する `ImageState` クラスと、QRコードを描画する `QRState` クラスとの遷移を管理する `StateManager` クラスを作成した。
 両者は `IState` クラス (純粋仮想関数のみ) を継承しており、ポインタを `IState*` 型のメンバ変数に代入してポリモーフィズムを実現する。
 
-![状態遷移](images/state-manager.png)
+![状態遷移](images/state-manager.png) {width=12cm}
 
 `StateManager::begin()` 関数で初期化、`StateManager::update()` 関数で描画を更新する。
 `StateManager::toggleState()` 関数を実行すると両者を切り替える。
@@ -2067,7 +2068,7 @@ MicroSDカードを取り外し、M5StackへLCD面に対して裏向き (端子�
 電源を入れるか、USBケーブルを差し込むとM5Stackが起動する。
 指定の位置に文字列や画像が正しく表示されていれば起動時の処理はひとまず問題ない。
 
-![動作確認](images/name-tag-preview.jpg)
+![動作確認](images/name-tag-preview.jpg) {width=8cm}
 
 下部の3つのボタン (Core2ではタッチパネル) には次の機能を割り当てている。
 
@@ -2101,13 +2102,13 @@ Core2で1台制作して筆者が使用し、Basic/Grayで2台制作して交流
 NFCタグにはAndroidアプリなどでデータを書き込むことが可能で、今回は名札の使用者のTwitterアカウントのURLを書き込んでおいた。
 NFCを有効にしたスマートフォンで読み込むとそのURLへ移動することができる。
 
-![NFCタグ貼り付け](images/nfc-tag.jpg)
+![NFCタグ貼り付け](images/nfc-tag.jpg) {width=8cm}
 
 3台のうち2台はM5GO Bottomを取り付けている。
 コミックマーケット99 2日目にはM5GO Charging Baseを持ち込んでいて、筆者のサークルスペースに設置していた (電源はモバイルバッテリから給電)。
 両者には電極が備わっているので、画像では分かりにくいがバッテリが減っても右側のように台の上に置くだけで充電できる (左側はC97初お披露目のM5Stack即売会レジ)。
 
-![充電中](images/c99-charging.jpg)
+![充電中](images/c99-charging.jpg) {width=6cm}
 
 肝心のバッテリの持ちであるが、600mAhのバッテリが搭載されたM5GO Bottomを取り付けても3～4時間くらいが限度のようである。
 LEDを点灯させたりバックライトの輝度を上げるとさらに厳しそうである。
@@ -2218,8 +2219,8 @@ SOFTWARE.
 
 - 書名: イベント名札を電子化する本
 - 発行: ホンナムユーティナイ
-- 著者: 神沢野並 (@nnm_t)
-- 表紙イラスト: 風羅煌 (@nagits2014)
+- 著者: 神沢野並
+- 表紙イラスト: 風羅煌
 - 発行
   - 2022年5月5日 COMITIA140 初版発行
 - 印刷: ちょ古っ都製本工房
