@@ -1,5 +1,6 @@
 *.bkp
 *.pdf
 *.docx
+*.bkp
 
 convert.sh
